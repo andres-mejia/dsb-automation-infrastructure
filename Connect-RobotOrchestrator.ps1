@@ -43,12 +43,13 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
+        Write-Log -LogPath $LogFile -Message "Fake error!!" -Severity 'Error'
+
         #Define TLS for Invoke-WebRequest
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         if(!$orchSSLcheck) {
           [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
         }
-
 
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity 'Info'
@@ -67,7 +68,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Robot exe is $robotExePath" -Severity 'Info'
 
         if(!(Test-Path $robotExePath)) {
-            Throw 'No robot exe was found on the $env:computername'
+            Throw "No robot exe was found on the $env:computername"
         } else {
           Write-Host "Robot exe found at $robotExePath"
           Write-Log -LogPath $LogFile -Message "Robot exe found at $robotExePath" -Severity 'Info'
@@ -190,7 +191,6 @@ function Log-Start {
       }
 
       Write-Log -LogPath $logFullPath -Message "Connect-RobotOrchestrator started for $env:computername" -Severity "Info"
-
     }
 }
 
@@ -432,12 +432,22 @@ function Install-Filebeat {
         Write-Log -LogPath $LogFile -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error' -ExitGracefully $True
         throw "There was an exception starting the Filebeat service: $_.Exception"
     }
-    Write-Host "Filebeat Service started successfully"
-    Write-Log -LogPath $LogFile -Message "Filebeat Service started successfully" -Severity 'Info'
+    if (Get-Service filebeat -ErrorAction SilentlyContinue) {
+        $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+        if ($service.State -eq "Running") {
+            Write-Host "Filebeat Service started successfully"
+            Write-Log -LogPath $LogFile -Message "Filebeat Service started successfully" -Severity 'Info'
+        }
+        else {
+            Write-Host "Filebeats service is not running correctly"
+            Write-Log -LogPath $LogFile -Message "Filebeats service is not running correctly" -Severity 'Error'
+            Throw "Filebeats service is not running correctly"
+        }
+    }
 
     cd $beforeCd
 }
 
 Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
 Main
-Log-Finish
+Log-Finish -NoExit
