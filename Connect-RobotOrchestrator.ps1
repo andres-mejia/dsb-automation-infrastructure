@@ -270,93 +270,104 @@ function Install-Filebeat {
 
     $beforeCd = Get-Location
 
-    if (!(Get-Service filebeat -ErrorAction SilentlyContinue)) {
-        $url = "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-$FilebeatVersion-windows-x86.zip"
-        Write-Host "Attempting to download Filebeat from: $url"
-        Write-Log -LogPath $LogFile -Message "Attempting to download from $url" -Severity 'Info'
-        $downloadedZip = "$InstallationPath\filebeat.zip"
-        Write-Host "Downloading to $downloadedZip"
-        Write-Log -LogPath $LogFile -Message "Downloading to $downloadedZip" -Severity 'Info'
-
+    if ((Get-Service filebeat -ErrorAction SilentlyContinue)) {
+        Write-Host "Filebeat already installed, attempting to uninstall"
+        Write-Log -LogPath $LogFile -Message "Filebeat already installed, attempting to uninstall" -Severity 'Info'
         Try {
-            $wc = New-Object System.Net.WebClient
-            $wc.DownloadFile($url, $downloadedZip)
-            Test-Path $downloadedZip -ErrorAction Stop
-        }
-        Catch {
-            Write-Host "There was an error downloading Filebeat: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error' -ExitGracefully $True
-            Break
-        }
-
-        $programFiles = "C:\Program Files"
-        Try {
-            Expand-Archive -Path $downloadedZip -DestinationPath $programFiles -Force
-        }
-        Catch {
-            Write-Host "There was an error unzipping Filebeat: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
-            Break
-        }
-
-        $unzippedFile = "$programFiles\filebeat-$FilebeatVersion-windows-x86"
-        $simpleName = "Filebeat"
-        Try {
-            Rename-Item -Path $unzippedFile -NewName $simpleName -ErrorAction Stop
-            Remove-Item $unzippedFile -Recurse -Force -ErrorAction Stop
-        }
-        Catch {
-            Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
-            Break
-        }
-
-        cd 'C:\Program Files\Filebeat'
-
-        $filebeatYaml = "$programFiles\$simpleName\filebeat.yml"
-        Remove-Item $filebeatYaml -Force
-        $wc = New-Object System.Net.WebClient
-        $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
-        Try {
-            $wc.DownloadFile($configUri, $filebeatYaml) 
-            Test-Path $filebeatYaml -ErrorAction Stop
-        }
-        Catch {
-            Write-Host "There was an error downloading the filebeats config: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
-            Break
-        }
-        
-        $serviceInstaller = "$programFiles\$simpleName\install-service-filebeat.ps1"
-        Remove-Item $serviceInstaller -Force
-        $wc = New-Object System.Net.WebClient
-        $serviceInstallerUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/install-service-filebeat.ps1"
-        Try {
-            $wc.DownloadFile($serviceInstallerUri, $serviceInstaller) 
-            Test-Path $serviceInstaller -ErrorAction Stop
-        }
-        Catch {
-            Write-Host "There was an error downloading the filebeats config: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
-            Break
-        }
-
-        Write-Host "Humio Token is $HumioIngestToken"
-        Try {
-            PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken $HumioIngestToken" -ErrorAction Stop 
+            Stop-Service filebeat
+            cd 'C:\Program Files\Filebeat'
+            PowerShell.exe -ExecutionPolicy UnRestricted -command ".\uninstall-service-filebeat.ps1" -ErrorAction Stop 
+            cd $beforeCd
+            Remove-Item 'C:\Program Files\Filebeat' -Recurse -Force -ErrorAction Stop
+            Remove-Item 'C:\ProgramData\filebeat' -Recurse -Force -ErrorAction Stop            
         }
         Catch {
             cd $beforeCd
-            Write-Host "There was an exception installing Filebeat: $_.Exception"
+            Write-Host "There was an exception uninstalling Filebeat: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         } 
-    } 
-    else {
-        Write-Host "Filebeat already installed"
-        Write-Log -LogPath $LogFile -Message "Filebeat already installed" -Severity 'Info'
     }
 
+    cd 'C:\Program Files\Filebeat'
+
+    $url = "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-$FilebeatVersion-windows-x86.zip"
+    Write-Host "Attempting to download Filebeat from: $url"
+    Write-Log -LogPath $LogFile -Message "Attempting to download from $url" -Severity 'Info'
+    $downloadedZip = "$InstallationPath\filebeat.zip"
+    if (Test-Path $downloadedZip) {
+        Remove-Item $downloadedZip -Recurse
+    }
+    Write-Host "Downloading to $downloadedZip"
+    Write-Log -LogPath $LogFile -Message "Downloading to $downloadedZip" -Severity 'Info'
+
+    Try {
+        $wc = New-Object System.Net.WebClient
+        $wc.DownloadFile($url, $downloadedZip)
+        Test-Path $downloadedZip -ErrorAction Stop
+    }
+    Catch {
+        Write-Host "There was an error downloading Filebeat: $_.Exception"
+        Write-Log -LogPath $LogFile -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error' -ExitGracefully $True
+        Break
+    }
+    Try {
+        Expand-Archive -Path $downloadedZip -DestinationPath 'C:\Program Files' -Force
+    }
+    Catch {
+        Write-Host "There was an error unzipping Filebeat: $_.Exception"
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Break
+    }
+
+    $unzippedFile = "C:\Program Files\filebeat-$FilebeatVersion-windows-x86"
+    Try {
+        Rename-Item -Path $unzippedFile -NewName 'Filebeat' -Force -ErrorAction Stop
+        Remove-Item $unzippedFile -Recurse -Force -ErrorAction Stop
+    }
+    Catch {
+        Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Break
+    }
+    $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
+    Remove-Item $filebeatYaml -Force
+    $wc = New-Object System.Net.WebClient
+    $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
+    Try {
+        $wc.DownloadFile($configUri, $filebeatYaml) 
+        Test-Path $filebeatYaml -ErrorAction Stop
+    }
+    Catch {
+        Write-Host "There was an error downloading the filebeats config: $_.Exception"
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Break
+    }
+    
+    $serviceInstaller = "C:\Program Files\Filebeat\install-service-filebeat.ps1"
+    Remove-Item $serviceInstaller -Force
+    $wc = New-Object System.Net.WebClient
+    $serviceInstallerUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/install-service-filebeat.ps1"
+    Try {
+        $wc.DownloadFile($serviceInstallerUri, $serviceInstaller) 
+        Test-Path $serviceInstaller -ErrorAction Stop
+    }
+    Catch {
+        Write-Host "There was an error downloading the filebeats config: $_.Exception"
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Break
+    }
+
+    Write-Host "Humio Token is $HumioIngestToken"
+    Try {
+        PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken $HumioIngestToken" -ErrorAction Stop 
+    }
+    Catch {
+        cd $beforeCd
+        Write-Host "There was an exception installing Filebeat: $_.Exception"
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Break
+    } 
     Try {
         Start-Service filebeat -ErrorAction Stop
     }
