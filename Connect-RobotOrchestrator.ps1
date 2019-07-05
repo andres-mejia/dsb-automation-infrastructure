@@ -29,7 +29,7 @@ $orchSSLcheck = $false
 function Main {        
     Process {
 
-        $script:tempDirectory = (Join-Path $ENV:TEMP "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
+        $script:tempDirectory = (Join-Path "C:\Users\naku0510\AppData\Local\Temp" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
         Install-Filebeat -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
