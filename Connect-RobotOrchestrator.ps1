@@ -213,7 +213,7 @@ function Write-Log
     )
 
     $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    $logString = "$now $Severity message='$Message' timeStamp=$now level=$Severity pcName=$env:computername"
+    $logString = "$now $Severity message='$Message' env=$Environment timeStamp=$now level=$Severity pcName=$env:computername"
     Add-Content -Path $LogPath -Value $logString
 
     If ($ExitGracefully -eq $True){
