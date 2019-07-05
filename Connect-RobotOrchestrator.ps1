@@ -363,12 +363,29 @@ function Install-Filebeat {
 
         $filebeatYaml = "$programFiles\$simpleName\filebeat.yml"
         Remove-Item $filebeatYaml -Force
-        Copy-Item -Path "C:\Users\naku0510\local_code\open_source\dsb-automation-infrastructure\filebeat.yml" -Destination "$programFiles\$simpleName"
-
-
+        $wc = New-Object System.Net.WebClient
+        $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
+        Try {
+            $wc.DownloadFile($configUri, $filebeatYaml)
+        }
+        Catch {
+            Write-Host "There was an error downloading the filebeats config: $_.Exception"
+            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Break
+        }
+        
         $serviceInstaller = "$programFiles\$simpleName\install-service-filebeat.ps1"
         Remove-Item $serviceInstaller -Force
-        Copy-Item -Path "C:\Users\naku0510\local_code\open_source\dsb-automation-infrastructure\install-service-filebeat.ps1" -Destination "$programFiles\$simpleName" -Force
+        $wc = New-Object System.Net.WebClient
+        $serviceInstallerUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/install-service-filebeat.ps1"
+        Try {
+            $wc.DownloadFile($serviceInstallerUri, $serviceInstaller)
+        }
+        Catch {
+            Write-Host "There was an error downloading the filebeats config: $_.Exception"
+            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Break
+        }
 
         Write-Host "Humio Token is $HumioIngestToken"
         Try {
