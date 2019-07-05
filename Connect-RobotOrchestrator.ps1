@@ -274,7 +274,6 @@ function Install-Filebeat {
         $url = "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-$FilebeatVersion-windows-x86.zip"
         Write-Host "Attempting to download Filebeat from: $url"
         Write-Log -LogPath $LogFile -Message "Attempting to download from $url" -Severity 'Info'
-        
         $downloadedZip = "$InstallationPath\filebeat.zip"
         Write-Host "Downloading to $downloadedZip"
         Write-Log -LogPath $LogFile -Message "Downloading to $downloadedZip" -Severity 'Info'
@@ -282,6 +281,7 @@ function Install-Filebeat {
         Try {
             $wc = New-Object System.Net.WebClient
             $wc.DownloadFile($url, $downloadedZip)
+            Test-Path $downloadedZip -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error downloading Filebeat: $_.Exception"
@@ -302,8 +302,8 @@ function Install-Filebeat {
         $unzippedFile = "$programFiles\filebeat-$FilebeatVersion-windows-x86"
         $simpleName = "Filebeat"
         Try {
-            Rename-Item -Path $unzippedFile -NewName $simpleName
-            Remove-Item $unzippedFile -Recurse -Force
+            Rename-Item -Path $unzippedFile -NewName $simpleName -ErrorAction Stop
+            Remove-Item $unzippedFile -Recurse -Force -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
@@ -318,7 +318,8 @@ function Install-Filebeat {
         $wc = New-Object System.Net.WebClient
         $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
         Try {
-            $wc.DownloadFile($configUri, $filebeatYaml)
+            $wc.DownloadFile($configUri, $filebeatYaml) 
+            Test-Path $filebeatYaml -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error downloading the filebeats config: $_.Exception"
@@ -331,7 +332,8 @@ function Install-Filebeat {
         $wc = New-Object System.Net.WebClient
         $serviceInstallerUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/install-service-filebeat.ps1"
         Try {
-            $wc.DownloadFile($serviceInstallerUri, $serviceInstaller)
+            $wc.DownloadFile($serviceInstallerUri, $serviceInstaller) 
+            Test-Path $serviceInstaller -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error downloading the filebeats config: $_.Exception"
@@ -341,7 +343,7 @@ function Install-Filebeat {
 
         Write-Host "Humio Token is $HumioIngestToken"
         Try {
-            PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken $HumioIngestToken" 
+            PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken $HumioIngestToken" -ErrorAction Stop 
         }
         Catch {
             cd $beforeCd
