@@ -27,9 +27,6 @@ filebeat.inputs:
   encoding: utf-8
   fields:
     "type": "azure-vms"
-#   multiline.pattern: '^\S{25} Error'
-#   multiline.negate: true
-#   multiline.match: after
 
 - type: log
   enabled: true
