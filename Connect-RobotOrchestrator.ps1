@@ -55,18 +55,6 @@ function Main {
           [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
         }
 
-        Write-Host "Trying to install Filebeat"
-        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity 'Info'
-
-        Try {
-            Install-Filebeat -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
-        }
-        Catch {
-            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
-            Throw 'There was a problem installing Filebeats'
-        }
-
         $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
         Write-Host "Robot exe is $robotExePath"
         Write-Log -LogPath $LogFile -Message "Robot exe is $robotExePath" -Severity 'Info'
@@ -141,11 +129,25 @@ function Main {
 
         Write-Host "Removing temp directory $($script:tempDirectory)"
         Write-Log -LogPath $LogFile -Message "Removing temp directory $($script:tempDirectory)" -Severity 'Info'
+        
+        
+        Write-Host "Trying to install Filebeat"
+        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity 'Info'
+
+        Try {
+            Install-Filebeat -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
+        }
+        Catch {
+            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Throw 'There was a problem installing Filebeats'
+        }
+
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
         End {
             If($?){
-              Write-Host "Completed Successfully."
+                Write-Host "Completed Successfully."
                 Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity 'Info'
                 Write-Host "Script is ending now."
             }
