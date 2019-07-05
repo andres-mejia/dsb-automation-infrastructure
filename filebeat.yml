@@ -23,7 +23,7 @@ filebeat.inputs:
   # Paths that should be crawled and fetched. Glob based paths.
 
   paths:
-    - C:\Users\naku0510\Connect-Uipath-Robot*.log
+    - c:\Users\Public\Connect-Uipath-Robot*.log
   encoding: utf-8
   fields:
     "type": "azure-vms"
