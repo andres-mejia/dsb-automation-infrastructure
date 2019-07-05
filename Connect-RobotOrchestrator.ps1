@@ -285,7 +285,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading Filebeat: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error' -ExitGracefully $True
             Break
         }
 
