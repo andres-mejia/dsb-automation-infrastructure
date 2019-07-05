@@ -100,11 +100,11 @@ function Main {
             Catch {
                 if ($_.Exception) {
                     Write-Host "There was an error running the robot.exe connect command, exception: $_.Exception"
-                    Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+                    Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
                 }
                 else {
                     Write-Host "There was an error running the robot.exe connect command, but the exception was empty"
-                    Log-Error -LogPath $LogFile -ErrorDesc "There was an error, but it was blank" -ExitGracefully $True
+                    Write-Log -LogPath $LogFile -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
                 }
                 Brea
             }
@@ -112,11 +112,11 @@ function Main {
         Catch {
             if ($_.Exception) {
                 Write-Host "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
-                Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+                Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             }
             else {
                 Write-Host "There was an error connecting the machine to $orchMachines, but the exception was empty"
-                Log-Error -LogPath $LogFile -ErrorDesc "There was an error, but it was blank" -ExitGracefully $True
+                Write-Log -LogPath $LogFile -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
             }
             Break
         }
@@ -130,7 +130,6 @@ function Main {
               Write-Host "Completed Successfully."
                 Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity 'Info'
                 Write-Host "Script is ending now."
-                Write-Log -LogPath $LogFile -Message " " -Severity 'Info'
             }
         }
     }
@@ -202,64 +201,24 @@ function Write-Log
         [Parameter(Mandatory=$true)]
         [string]$LogPath,
         
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory=$true)]
         [string]$Message,
         
-        [Parameter()]
+        [Parameter(Mandatory=$true)]
         [ValidateSet('Info','Warn','Error')]
-        [string]$Severity = 'Info' ## Default to a low severity. Otherwise, override
-    )
+        [string]$Severity = 'Info',
 
-    $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    $logString = "$now $Severity message=$Message timeStamp=$now level=$Severity pcName=$env:computername"
-    Add-Content -Path $LogPath -Value $logString
-}
-
-
-<#
-  .SYNOPSIS
-    Writes an error to a log file
-  .DESCRIPTION
-    Writes the passed error to a new line at the end of the specified log file
-  .PARAMETER LogPath
-    Mandatory. Full path of the log file you want to write to. Example: C:\Windows\Temp\Test_Script.log
-  .PARAMETER ErrorDesc
-    Mandatory. The description of the error you want to pass (use $_.Exception)
-  .PARAMETER ExitGracefully
-    Mandatory. Boolean. If set to True, runs Log-Finish and then exits script
-  .INPUTS
-    Parameters above
-  .OUTPUTS
-    None
-#>
-function Log-Error {
-
-    [CmdletBinding()]
-
-    param (
-        [Parameter(Mandatory=$true)]
-        [string]$LogPath,
-
-        [Parameter(Mandatory=$true)]
-        [string]$ErrorDesc,
-
-        [Parameter(Mandatory=$true)]
+        [Parameter()]
         [boolean]$ExitGracefully
     )
 
-    Process{
-      $now = Get-Date -format "yyyy:MM:dd.ffff"
-      $logString = "$now Error {""message"": ""$ErrorDesc"", ""timeStamp"": ""$now"", ""level"": ""Error"", ""pcName"": ""$env:computername""}"
-      Add-Content -Path $LogPath -Value $logString 
+    $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
+    $logString = "$now $Severity message='$Message' timeStamp=$now level=$Severity pcName=$env:computername"
+    Add-Content -Path $LogPath -Value $logString
 
-      #Write to screen for debug mode
-      Write-Debug "Error: An error has occurred [$ErrorDesc]."
-
-      #If $ExitGracefully = True then run Log-Finish and exit script
-      If ($ExitGracefully -eq $True){
+    If ($ExitGracefully -eq $True){
         Log-Finish -LogPath $LogPath
         Break
-      }
     }
 }
 
@@ -326,7 +285,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading Filebeat: $_.Exception"
-            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         }
 
@@ -336,7 +295,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error unzipping Filebeat: $_.Exception"
-            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         }
 
@@ -348,7 +307,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
-            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         }
 
@@ -363,7 +322,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading the filebeats config: $_.Exception"
-            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         }
         
@@ -376,7 +335,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading the filebeats config: $_.Exception"
-            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         }
 
@@ -387,7 +346,7 @@ function Install-Filebeat {
         Catch {
             cd $beforeCd
             Write-Host "There was an exception installing Filebeat: $_.Exception"
-            Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         } 
     } 
@@ -402,7 +361,7 @@ function Install-Filebeat {
     Catch {
         cd $beforeCd
         Write-Host "There was an exception starting the Filebeat service: $_.Exception"
-        Log-Error -LogPath $LogFile -ErrorDesc $_.Exception -ExitGracefully $True
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
         Break
     }
 

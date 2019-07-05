@@ -27,6 +27,9 @@ filebeat.inputs:
   encoding: utf-8
   fields:
     "type": "azure-vms"
+  multiline.pattern: '^\S{25} Error'
+  multiline.negate: true
+  multiline.match: after
   
   # paths:
   #   - C:\Users\*\AppData\Local\UiPath\Logs\*Execution.log
