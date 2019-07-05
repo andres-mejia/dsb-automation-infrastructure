@@ -210,7 +210,7 @@ function Write-Log
         [string]$Severity = 'Info' ## Default to a low severity. Otherwise, override
     )
 
-    $now = Get-Date -format "o"
+    $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
     $logString = "$now $Severity message=$Message timeStamp=$now level=$Severity pcName=$env:computername"
     Add-Content -Path $LogPath -Value $logString
 }

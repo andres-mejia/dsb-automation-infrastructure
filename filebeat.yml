@@ -26,7 +26,7 @@ filebeat.inputs:
     - C:\Users\naku0510\Connect-Uipath-Robot*.log
   encoding: utf-8
   fields:
-    "type": "robot-execution"
+    "type": "azure-vms"
   
   # paths:
   #   - C:\Users\*\AppData\Local\UiPath\Logs\*Execution.log
