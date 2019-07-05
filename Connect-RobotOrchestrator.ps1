@@ -20,7 +20,7 @@ $global:sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
 $global:sDebug = $true
 #Log File Info
-$global:sLogPath = "C:\ProgramData\AzureOrchestration"
+$global:sLogPath = "C:\WindowsAzure\Logs"
 $global:sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $global:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 #Orchestrator SSL check
