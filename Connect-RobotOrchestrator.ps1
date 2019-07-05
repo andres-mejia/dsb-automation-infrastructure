@@ -20,7 +20,7 @@ $sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
 $sDebug = $true
 #Log File Info
-$sLogPath = "C:\Users\naku0510"
+$sLogPath = "C:\Users\Public"
 $sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $global:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 #Orchestrator SSL check
@@ -29,7 +29,7 @@ $orchSSLcheck = $false
 function Main {        
     Process {
 
-        $script:tempDirectory = (Join-Path "C:\Users\naku0510\AppData\Local\Temp" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
+        $script:tempDirectory = (Join-Path "C:\Users\Public" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
         Install-Filebeat -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
