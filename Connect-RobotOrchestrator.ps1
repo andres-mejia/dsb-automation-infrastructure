@@ -14,20 +14,24 @@
         [string] $HumioIngestToken
     )
 
-$ErrorActionPreference = "SilentlyContinue"
+$global:ErrorActionPreference = "SilentlyContinue"
 #Script Version
-$sScriptVersion = "1.0"
+$global:sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
-$sDebug = $true
+$global:sDebug = $true
 #Log File Info
-$sLogPath = "C:\Users\Public"
-$sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
+$global:sLogPath = "C:\ProgramData\AzureOrchestration"
+$global:sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $global:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 #Orchestrator SSL check
 $orchSSLcheck = $false
 
 function Main {        
     Process {
+
+        If (-not (Test-Path $sLogPath)) {
+            New-Item -Path "C:\ProgramData" -Name "AzureOrchestration" -ItemType "directory"
+        }
 
         Write-Host "Logging to file $LogFile"
         Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity 'Info'
