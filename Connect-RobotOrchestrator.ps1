@@ -30,7 +30,7 @@ function Main {
     Process {
 
         If (-not (Test-Path $sLogPath)) {
-            New-Item -Path "C:\ProgramData" -Name "AzureOrchestration" -ItemType "directory"
+            New-Item -ItemType "directory" -Path "C:\ProgramData\AzureOrchestration"
         }
 
         Write-Host "Logging to file $LogFile"

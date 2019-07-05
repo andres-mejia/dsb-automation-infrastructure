@@ -23,7 +23,7 @@ filebeat.inputs:
   # Paths that should be crawled and fetched. Glob based paths.
 
   paths:
-    - c:\ProgramData\AzureOrchestration\*
+    - c:\ProgramData\AzureOrchestration\*.log
     - c:\Users\*\AppData\Local\UiPath\Logs\*Execution.log
   encoding: utf-8
   fields:
