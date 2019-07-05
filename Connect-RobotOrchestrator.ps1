@@ -21,7 +21,7 @@ $sScriptVersion = "1.0"
 $sDebug = $true
 #Log File Info
 $sLogPath = "C:\Users\naku0510"
-$sLogName = "Connect-Uipath-Robot.log"
+$sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $global:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 #Orchestrator SSL check
 $orchSSLcheck = $false
@@ -35,14 +35,13 @@ function Main {
         Install-Filebeat -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
 
         Write-Host "Logging to file $LogFile"
-        Log-Write -LogPath $LogFile -LineValue "Logging to file $LogFile"
+        Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity 'Info'
 
-        #Log log log
         Write-Host "Connect Robot Orchestrator starts"
-        Log-Write -LogPath $LogFile -LineValue "Connect Robot Orchestrator starts"
+        Write-Log -LogPath $LogFile -Message "Connect Robot Orchestrator starts" -Severity 'Info'
 
         Write-Host "Tenant is $tenant"
-        Log-Write -LogPath $LogFile -LineValue "Tenant is $tenant"
+        Write-Log -LogPath $LogFile -Message "Tenant is $tenant" -Severity 'Info'
 
         #Define TLS for Invoke-WebRequest
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -52,13 +51,13 @@ function Main {
 
         $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
         Write-Host "Robot exe is $robotExePath"
-        Log-Write -LogPath $LogFile -LineValue "Robot exe is $robotExePath"
+        Write-Log -LogPath $LogFile -Message "Robot exe is $robotExePath" -Severity 'Info'
 
         if(!(Test-Path $robotExePath)) {
             Throw 'No robot exe was found on the $env:computername'
         } else {
           Write-Host "Robot exe found at $robotExePath"
-          Log-Write -LogPath $LogFile -LineValue "Robot exe found at $robotExePath"
+          Write-Log -LogPath $LogFile -Message "Robot exe found at $robotExePath" -Severity 'Info'
         }
 
         Try {
@@ -80,7 +79,7 @@ function Main {
             #     Throw ('No license key found for machine: $env:computername')
             # }
 
-            Log-Write -LogPath $LogFile -LineValue "License key for $env:computername is: $RobotKey"
+            Write-Log -LogPath $LogFile -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
             Write-Host "License key for $env:computername is: $RobotKey"
 
             # Starting Robot
@@ -92,7 +91,7 @@ function Main {
             $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
             # if ($waitForRobotSVC -eq "Running") {
             # connect Robot to Orchestrator with Robot key
-            Log-Write -LogPath $LogFile -LineValue "Orchestrator URL to connect to is: $orchestratorUrl"
+            Write-Log -LogPath $LogFile -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
             Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
             # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
             Try {
@@ -123,15 +122,15 @@ function Main {
         }
 
         Write-Host "Removing temp directory $($script:tempDirectory)"
-        Log-Write -LogPath $LogFile -LineValue "Removing temp directory $($script:tempDirectory)"
+        Write-Log -LogPath $LogFile -Message "Removing temp directory $($script:tempDirectory)" -Severity 'Info'
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
         End {
             If($?){
               Write-Host "Completed Successfully."
-                Log-Write -LogPath $LogFile -LineValue "Completed Successfully."
+                Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity 'Info'
                 Write-Host "Script is ending now."
-                Log-Write -LogPath $LogFile -LineValue " "
+                Write-Log -LogPath $LogFile -Message " " -Severity 'Info'
             }
         }
     }
@@ -172,16 +171,14 @@ function Log-Start {
     )
 
     Process{
-      $sFullPath = $LogPath + "\" + $LogName
-
+      $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
       #Check if file exists and delete if it does
-      If(!(Test-Path -Path $sFullPath)){
+      If(!(Test-Path -Path $logFullPath)){
         New-Item -Path $LogPath -Value $LogName -ItemType File
       }
 
-      $now = Get-Date -Format "o"
-      $logString = "$now Info {""message"": Connect-RobotOrchestrator started for $env:computername, ""timeStamp"": $now}"
-      Add-Content -Path $LogPath -Value $logString 
+      Write-Log -LogPath $logFullPath -Message "Connect-RobotOrchestrator started for $env:computername" -Severity "Info"
+
     }
 }
 
@@ -199,26 +196,25 @@ function Log-Start {
   .OUTPUTS
     None
 #>
-function Log-Write {
-
-    [CmdletBinding()]
+function Write-Log
+{
     param (
         [Parameter(Mandatory=$true)]
         [string]$LogPath,
-
-        [Parameter(Mandatory=$true)]
-        [string]$LineValue
+        
+        [Parameter(Mandatory)]
+        [string]$Message,
+        
+        [Parameter()]
+        [ValidateSet('Info','Warn','Error')]
+        [string]$Severity = 'Info' ## Default to a low severity. Otherwise, override
     )
 
-    Process{
-      $now = Get-Date -format "yyyy:MM:dd.ffff"
-      $logString = "$now Info {""message"": ""$LineValue"", ""timeStamp"": ""$now"", ""level"": ""Info"", ""pcName"": ""$env:computername""}"
-      Add-Content -Path $LogPath -Value $logString 
-
-      #Write to screen for debug mode
-      Write-Debug $LineValue
-    }
+    $now = Get-Date -format "o"
+    $logString = "$now $Severity message=$Message timeStamp=$now level=$Severity pcName=$env:computername"
+    Add-Content -Path $LogPath -Value $logString
 }
+
 
 <#
   .SYNOPSIS
@@ -286,9 +282,6 @@ function Log-Finish {
     [CmdletBinding()]
 
     param (
-        [Parameter(Mandatory=$true)]
-        [string]$LogPath,
-
         [Parameter(Mandatory=$false)]
         [string]$NoExit
     )
@@ -314,18 +307,18 @@ function Install-Filebeat {
     )
 
     Write-Host "Trying to install filebeat version: $FilebeatVersion"
-    Log-Write -LogPath $LogFile -LineValue "Trying to install filebeat version: $FilebeatVersion"
+    Write-Log -LogPath $LogFile -Message "Trying to install filebeat version: $FilebeatVersion" -Severity 'Info'
 
     $beforeCd = Get-Location
 
     if (!(Get-Service filebeat -ErrorAction SilentlyContinue)) {
         $url = "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-$FilebeatVersion-windows-x86.zip"
         Write-Host "Attempting to download Filebeat from: $url"
-        Log-Write -LogPath $LogFile -LineValue "Attempting to download from $url"
+        Write-Log -LogPath $LogFile -Message "Attempting to download from $url" -Severity 'Info'
         
         $downloadedZip = "$InstallationPath\filebeat.zip"
         Write-Host "Downloading to $downloadedZip"
-        Log-Write -LogPath $LogFile -LineValue "Downloading to $downloadedZip"
+        Write-Log -LogPath $LogFile -Message "Downloading to $downloadedZip" -Severity 'Info'
 
         Try {
             $wc = New-Object System.Net.WebClient
@@ -400,7 +393,7 @@ function Install-Filebeat {
     } 
     else {
         Write-Host "Filebeat already installed"
-        Log-Write -LogPath $LogFile -LineValue "Filebeat already installed"
+        Write-Log -LogPath $LogFile -Message "Filebeat already installed" -Severity 'Info'
     }
 
     Try {
@@ -418,4 +411,4 @@ function Install-Filebeat {
 
 Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
 Main
-Log-Finish -LogPath $LogFile
+Log-Finish
