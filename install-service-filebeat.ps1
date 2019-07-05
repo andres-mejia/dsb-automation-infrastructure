@@ -13,11 +13,12 @@ if (Get-Service filebeat -ErrorAction SilentlyContinue) {
 }
 
 $workdir = Split-Path $MyInvocation.MyCommand.Path
-Write-Host "Setting is output.elasticsearch.password=$HumioIngestToken"
+$elasticToken = "output.elasticsearch.password=$HumioIngestToken"
+Write-Host "Elastic setting is $elasticToken"
 # Create the new service.
 New-Service -name filebeat `
   -displayName Filebeat `
-  -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"output.elasticsearch.password=$HumioIngestToken`""
+  -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"output.elasticsearch.password=AwhoOLTo8KsRv6S3IIbQvUxR4uyw3tvQY8YVmHIkqoCk`""
 
 # Attempt to set the service to delayed start using sc config.
 Try {

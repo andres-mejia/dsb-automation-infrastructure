@@ -411,7 +411,7 @@ function Install-Filebeat {
     Write-Host "Humio Token is $HumioIngestToken"
     Try {
         cd 'C:\Program Files\Filebeat'
-        PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken $HumioIngestToken" -ErrorAction Stop 
+        PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken '$HumioIngestToken'" -ErrorAction Stop 
     }
     Catch {
         cd $beforeCd
