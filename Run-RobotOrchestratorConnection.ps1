@@ -66,7 +66,7 @@ function Main {
         . "orchestrationDir\Finish-Log.ps1"
 
         Try {
-            ./Start-Log -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion -ErrorAction Stop
+            Start-Log -LogPath $sLogPath -LogName $sLogName -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error creating logfile: $_.Exception"

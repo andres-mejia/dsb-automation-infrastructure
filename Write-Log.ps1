@@ -31,7 +31,13 @@ function Write-Log
 
     $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
     $logString = "$now $Severity message='$Message' env=$Environment timeStamp=$now level=$Severity pcName=$env:computername"
-    Add-Content -Path $LogPath -Value $logString
+    Try {
+        Add-Content -Path $LogPath -Value $logString
+    }
+    Catch {
+        Write-Host "There was an error writing a log to $LogPath"
+        Throw "There was an error creating {$LogPath}: $_.Exception"
+    }
 
     If ($ExitGracefully -eq $True){
         Log-Finish -LogPath $LogPath
