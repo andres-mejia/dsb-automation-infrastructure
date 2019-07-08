@@ -39,6 +39,11 @@ function Main {
         $global:tempDirectory = (Join-Path "C:\Users\Public" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
         Write-Host "Saving all temporary files to $script:tempDirectory"
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
+
+        If (-Not ($orchestrationDir)) {
+            Write-Host "Creating program file dir at: $orchestrationDir"
+            New-Item -Path $orchestrationDir -ItemType File
+        }
         
         # Downloading Log files
         $wc = New-Object System.Net.WebClient
