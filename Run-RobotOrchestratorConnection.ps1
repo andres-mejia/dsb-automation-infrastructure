@@ -42,7 +42,7 @@ function Main {
 
         If (-Not (Test-Path $orchestrationDir)) {
             Write-Host "Creating program file dir at: $orchestrationDir"
-            New-Item -Path $orchestrationDir -ItemType File
+            New-Item -ItemType Directory -Path $orchestrationDir
         }
         
         # Downloading Log files
