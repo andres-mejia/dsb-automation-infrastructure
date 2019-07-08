@@ -23,8 +23,7 @@ filebeat.inputs:
   # Paths that should be crawled and fetched. Glob based paths.
 
   paths:
-    - C:\WindowsAzure\Logs\Connect-Uipath-Robot-*.log
-    - C:\WindowsAzure\Logs\MonitoringAgent*
+    - C:\ProgramData\AutomationAzureOrchestration\*.log
   encoding: utf-8
   fields:
     "type": "azure-vms"
