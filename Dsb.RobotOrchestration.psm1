@@ -48,10 +48,7 @@ function Write-Log
         
         [Parameter(Mandatory=$true)]
         [ValidateSet('Info','Warn','Error')]
-        [string]$Severity = 'Info',
-
-        [Parameter()]
-        [boolean]$ExitGracefully
+        [string]$Severity = 'Info'
     )
 
     $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
@@ -64,27 +61,6 @@ function Write-Log
         Throw "There was an error creating {$LogPath}: $_.Exception"
     }
 
-    If ($ExitGracefully -eq $True){
-        Log-Finish
-        Break
-    }
-}
-
-function Finish-Log {
-
-    [CmdletBinding()]
-
-    param (
-        [Parameter()]
-        [string]$NoExit
-    )
-
-    Process{
-      #Exit calling script if NoExit has not been specified or is set to False
-      If(!($NoExit) -or ($NoExit -eq $False)){
-        Exit
-      }
-    }
 }
 
 function waitForService($servicesName, $serviceStatus) {
@@ -176,11 +152,11 @@ function Connect-RobotToOrchestrator {
         Catch {
             if ($_.Exception) {
                 Write-Host "There was an error running the robot.exe connect command, exception: $_.Exception"
-                Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+                Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
             }
             else {
                 Write-Host "There was an error running the robot.exe connect command, but the exception was empty"
-                Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
+                Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error'
             }
             Break
         }
@@ -188,12 +164,12 @@ function Connect-RobotToOrchestrator {
     Catch {
         if ($_.Exception) {
             Write-Host "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
-            Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
             Throw "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
         }
         else {
             Write-Host "There was an error connecting the machine to $orchMachines, but the exception was empty"
-            Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error'
             Throw "There was an error connecting the machine to $orchMachines, but the exception was empty"
         }
         Break
@@ -231,7 +207,7 @@ function Install-Filebeat {
         Catch {
             cd $beforeCd
             Write-Host "There was an exception stopping Filebeat service: $_.Exception"
-            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error'
             Break
         } 
     }
@@ -255,7 +231,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading Filebeat: $_.Exception"
-            Write-Log -LogPath $LogPath -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogPath -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error'
             Throw "There was an error downloading Filebeat: $_.Exception"
         }
 
@@ -267,7 +243,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error unzipping Filebeat: $_.Exception"
-            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error'
             Throw "There was an error downloading Filebeat: $_.Exception"
         }
 
@@ -283,7 +259,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
-            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error'
             throw "There was an error renaming unzipped Filebeat dir: $_.Exception"
         }
 
@@ -302,7 +278,7 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading the filebeats config: $_.Exception"
-            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error'
             throw [System.IO.Exception] $_.Exception
         }
 
@@ -317,7 +293,7 @@ function Install-Filebeat {
         Catch {
             cd $beforeCd
             Write-Host "There was an exception installing Filebeat: $_.Exception"
-            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error'
             throw [System.IO.Exception] $_.Exception
         } 
 
@@ -338,7 +314,7 @@ function Install-Filebeat {
     }
     Catch {
         Write-Host "There was an error downloading the filebeats config: $_.Exception"
-        Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Write-Log -LogPath $LogPath -Message $_.Exception -Severity 'Error'
         throw $_.Exception
     }
 
@@ -351,7 +327,7 @@ function Install-Filebeat {
     Catch {
         cd $beforeCd
         Write-Host "There was an exception starting the Filebeat service: $_.Exception"
-        Write-Log -LogPath $LogPath -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error' -ExitGracefully $True
+        Write-Log -LogPath $LogPath -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error'
         throw "There was an exception starting the Filebeat service: $_.Exception"
     }
 
