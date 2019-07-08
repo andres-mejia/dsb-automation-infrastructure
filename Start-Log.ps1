@@ -13,18 +13,26 @@ function Start-Log {
         [string]$ScriptVersion
     )
 
-    Process{
-        If (-Not (Test-Path $LogPath)) {
-            Write-Host "There was no directory at $LogPath, trying to create it now"
-            New-Item -ItemType Directory -Path $LogPath | Out-Null
+    If (-Not (Test-Path $LogPath)) {
+        Write-Host "There was no directory at $LogPath, trying to create it now"
+        Try {
+            New-Item -ItemType Directory -Path $LogPath -ErrorAction Stop | Out-Null
         }
-        $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
-        #Check if file exists and delete if it does
-        If(-Not (Test-Path -Path $logFullPath)){
-            Write-Host "There was no logfile at $logFullPath, trying to create it now"
-            New-Item -Path $LogPath -Value $LogName -ItemType File
+        Catch {
+            Write-Host "There was an error creating $LogPath"
+            Throw "There was an error creating $LogPath: $_.Exception"
         }
-  
-        Write-Log -LogPath $logFullPath -Message "Connect-RobotOrchestrator started for $env:computername" -Severity "Info"
+    }
+    $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
+    #Check if file exists and delete if it does
+    If(-Not (Test-Path -Path $logFullPath)){
+        Write-Host "There was no logfile at $logFullPath, trying to create it now"
+        Try {
+            New-Item -Path $LogPath -Name $LogName -ItemType File
+        }
+        Catch {
+            Write-Host "There was an error creating $logFullPath"
+            Throw "There was an error creating $logFullPath: $_.Exception"
+        }
     }
 }

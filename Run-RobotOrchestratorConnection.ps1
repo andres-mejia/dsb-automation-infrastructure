@@ -29,7 +29,6 @@ $sslCheck = $false
 
 function Main {
     Begin {
-        
         #Define TLS for Invoke-WebRequest
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         if(!$sslCheck) {
