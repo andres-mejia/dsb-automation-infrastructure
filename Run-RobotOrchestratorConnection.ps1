@@ -14,16 +14,16 @@
         [string] $HumioIngestToken
     )
 
-$global:ErrorActionPreference = "SilentlyContinue"
-$global:sScriptVersion = "1.0"
+$script:ErrorActionPreference = "SilentlyContinue"
+$script:sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
-$global:sDebug = $true
+$script:sDebug = $true
 #Log File Info
-$global:sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
-$global:sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
-$global:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
+$script:sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
+$script:sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
+$script:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 # Orchestration script directory
-$global:orchestrationDir = "C:\Program Files\AutomationAzureOrchestration"
+$script:orchestrationDir = "C:\Program Files\AutomationAzureOrchestration"
 #Orchestrator SSL check
 $sslCheck = $false
 
@@ -33,14 +33,14 @@ function Main {
         #Define TLS for Invoke-WebRequest
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         if(!$sslCheck) {
-          [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
         }
 
-        $global:tempDirectory = (Join-Path "C:\Users\Public" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
+        $script:tempDirectory = (Join-Path "C:\Users\Public" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
         Write-Host "Saving all temporary files to $script:tempDirectory"
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
-        If (-Not ($orchestrationDir)) {
+        If (-Not (Test-Path $orchestrationDir)) {
             Write-Host "Creating program file dir at: $orchestrationDir"
             New-Item -Path $orchestrationDir -ItemType File
         }
