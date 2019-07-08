@@ -97,8 +97,8 @@ function Connect-RobotToOrchestrator {
             [string] $Environment
         )
 
-    $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
     Start-Log -LogPath $LogPath -LogName $LogName
+    $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
 
     $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
     Write-Host "Robot exe is $robotExePath"
@@ -195,8 +195,8 @@ function Install-Filebeat {
         [string]$FilebeatVersion
     )
 
-    $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
     Start-Log -LogPath $LogPath -LogName $LogName
+    $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
 
     Write-Host "Trying to install filebeat version: $FilebeatVersion"
     Write-Log -LogPath $fullLogPath -Message "Trying to install filebeat version: $FilebeatVersion" -Severity 'Info'
