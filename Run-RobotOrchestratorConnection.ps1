@@ -20,10 +20,11 @@ $script:sScriptVersion = "1.0"
 $script:sDebug = $true
 #Log File Info
 $script:sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
-$script:sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
-$script:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
+$script:overallLog = "Run-Robot-Orchestrator-Connection-$(Get-Date -f "yyyyMMddhhmmssfff").log"
+$script:LogFile = Join-Path -Path $sLogPath -ChildPath $overallLog
 # Orchestration script directory
-$script:orchestrationDir = "C:\Program Files\AutomationAzureOrchestration"
+$script:orchestrationDir = "C:\Program Files\WindowsPowerShell\Modules\RobotOrchestration"
+$script:scheduledTaskScript = "Connect-Robot-Orchestrator-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 #Orchestrator SSL check
 $sslCheck = $false
 
@@ -43,6 +44,12 @@ function Main {
             Write-Host "Creating program file dir at: $orchestrationDir"
             New-Item -ItemType Directory -Path $orchestrationDir
         }
+
+        $wc = New-Object System.Net.WebClient
+        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/RobotOrchestration.psd1"
+        Write-Host "Attempting to download file from from: $orchModule"
+        $orchModuleDownload = "$orchestrationDir\RobotOrchestration.psd1"
+        $wc.DownloadFile($orchModule, $orchModuleDownload)        
         
         # Downloading Log files
         $wc = New-Object System.Net.WebClient
@@ -61,24 +68,34 @@ function Main {
         $finishLogDownload = "$orchestrationDir\Finish-Log.ps1"
         $wc.DownloadFile($finishLogUri, $finishLogDownload)
 
+        $connectRobot = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
+        Write-Host "Attempting to download file from from: $connectRobot"
+        $connectRobotDownload = "$orchestrationDir\Connect-RobotToOrchestrator.ps1"
+        $wc.DownloadFile($connectRobot, $connectRobotDownload)
+
         . "orchestrationDir\Start-Log.ps1"
+        . ".\orchestrationDir\Start-Log.ps1"
         . "orchestrationDir\Write-Log.ps1"
+        . ".\orchestrationDir\Write-Log.ps1"
         . "orchestrationDir\Finish-Log.ps1"
+        . ".\orchestrationDir\Finish-Log.ps1"
+        . "orchestrationDir\Connect-RobotToOrchestrator.ps1"
+        . ".\orchestrationDir\Connect-RobotToOrchestrator.ps1"
 
         Try {
-            Start-Log -LogPath $sLogPath -LogName $sLogName -ErrorAction Stop
+            ./Start-Log -LogPath $sLogPath -LogName $overallLog -ErrorAction Stop
         }
         Catch {
-            Write-Host "There was an error creating logfile: $_.Exception"
+            ./Write-Host "There was an error creating logfile: $_.Exception"
             Throw "There was an error creating logfile: $_.Exception"
             Break
         }
-        Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
+        ./Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
     }   
 
     Process {
         Write-Host "Logging to file $LogFile"
-        ./Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity 'Info'
 
         Write-Host "Connect Robot Orchestrator starts"
         ./Write-Log -LogPath $LogFile -Message "Connect Robot Orchestrator starts" -Severity 'Info'
@@ -88,8 +105,6 @@ function Main {
         
         Write-Host "Trying to install Filebeat"
         ./Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity 'Info'
-
-        # Schedule connect to orchestrator job to run
 
         Try {
             Install-Filebeat -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
@@ -101,6 +116,16 @@ function Main {
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+
+        Write-Host "Try running robot connection script"
+        Try {
+            ./Connect-RobotToOrchestrator -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
+        }
+        Catch {
+            Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
+            ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Throw "There was an error trying to run robot connection script, exception: $_.Exception"
+        }
 
         End {
             If($?){
@@ -130,7 +155,7 @@ function Install-Filebeat {
     $beforeCd = Get-Location
 
     if ((Get-Service filebeat -ErrorAction SilentlyContinue)) {
-        Write-Host "Filebeat service already installed, attempting to stop servcie"
+        Write-Host "Filebeat service already installed, attempting to stop service"
         ./Write-Log -LogPath $LogFile -Message "Filebeat service already installed, attempting to stop servcie" -Severity 'Info'
         Try {
             $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
