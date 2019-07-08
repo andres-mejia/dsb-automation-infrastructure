@@ -23,7 +23,7 @@ $script:sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $script:overallLog = "Run-Robot-Orchestrator-Connection-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $script:LogFile = Join-Path -Path $sLogPath -ChildPath $overallLog
 # Orchestration script directory
-$script:orchestrationDir = "C:\Program Files\WindowsPowerShell\Modules\RobotOrchestration"
+$script:orchestrationDir = "C:\Program Files\WindowsPowerShell\Modules\Dsb.RobotOrchestration"
 $script:scheduledTaskScript = "Connect-Robot-Orchestrator-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 #Orchestrator SSL check
 $sslCheck = $false
@@ -45,17 +45,17 @@ function Main {
             New-Item -ItemType Directory -Path $orchestrationDir
         }
         
+        $wc = New-Object System.Net.WebClient
+        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
+        Write-Host "Attempting to download file from from: $orchModule"
+        $orchModuleDownload = "$orchestrationDir\Dsb.RobotOrchestration.psm1"
+        $wc.DownloadFile($orchModule, $orchModuleDownload)        
+
         $p = [Environment]::GetEnvironmentVariable("PSModulePath")
         $p += ";C:\Program Files\WindowsPowerShell\Modules\"
         [Environment]::SetEnvironmentVariable("PSModulePath", $p)
-
-        $wc = New-Object System.Net.WebClient
-        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/RobotOrchestration.psm1"
-        Write-Host "Attempting to download file from from: $orchModule"
-        $orchModuleDownload = "$orchestrationDir\RobotOrchestration.psm1"
-        $wc.DownloadFile($orchModule, $orchModuleDownload)        
         
-        Import-Module RobotOrchestration
+        Import-Module Dsb.RobotOrchestration
 
         Try {
             Start-Log -LogPath $sLogPath -LogName $overallLog -ErrorAction Stop

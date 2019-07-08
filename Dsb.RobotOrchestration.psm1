@@ -198,7 +198,6 @@ function Connect-RobotToOrchestrator {
     Finish-Log -NoExit
 }
 
-
 function Install-Filebeat {
 
     [CmdletBinding()]
