@@ -65,7 +65,7 @@ function Write-Log
     }
 
     If ($ExitGracefully -eq $True){
-        Log-Finish -LogPath $LogPath
+        Log-Finish
         Break
     }
 }
@@ -75,7 +75,7 @@ function Finish-Log {
     [CmdletBinding()]
 
     param (
-        [Parameter(Mandatory=$false)]
+        [Parameter()]
         [string]$NoExit
     )
 
@@ -317,22 +317,6 @@ function Install-Filebeat {
         } 
 
     }
-
-    # if (Test-Path 'C:\Program Files\Filebeat') {
-    #     Write-Host "Filebeat folder still exists, trying to delete it"
-    #     Write-Log -LogPath $LogFile -Message "Filebeat folder still exists, trying to delete it" -Severity 'Info'
-    #     Try {
-    #         Remove-Item 'C:\Program Files\Filebeat' -Recurse -Force -ErrorAction Stop
-    #         # if (Test-Path 'C:\ProgramData\filebeat') {
-    #         #     Remove-Item 'C:\ProgramData\filebeat' -Recurse -Force -ErrorAction Stop            
-    #         # }
-    #     }
-    #     Catch {
-    #         Write-Host "There was an exception uninstalling Filebeat: $_.Exception"
-    #         Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
-    #         Break
-    #     } 
-    # }
 
     Write-Host "Retrieving filebeats config"
     Write-Log -LogPath $LogFile -Message "Retrieving filebeats config" -Severity 'Info'
