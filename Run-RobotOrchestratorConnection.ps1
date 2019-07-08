@@ -25,6 +25,7 @@ $script:LogFile = Join-Path -Path $sLogPath -ChildPath $overallLog
 # Orchestration script directory
 $script:orchestrationDir = "C:\Program Files\WindowsPowerShell\Modules\Dsb.RobotOrchestration"
 $script:scheduledTaskScript = "Connect-Robot-Orchestrator-$(Get-Date -f "yyyyMMddhhmmssfff").log"
+$script:installFilebeatScript = "Install-Filebeat-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 #Orchestrator SSL check
 $sslCheck = $false
 
@@ -82,7 +83,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
         Try {
-            Install-Filebeat -LogPath $LogFile -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatLog -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"

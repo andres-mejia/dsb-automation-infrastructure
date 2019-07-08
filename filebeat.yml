@@ -30,7 +30,6 @@ filebeat.inputs:
   multiline.negate: false
   multiline.match: after
 
-
 - type: log
   enabled: true
   # Paths that should be crawled and fetched. Glob based paths.
