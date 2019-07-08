@@ -47,20 +47,20 @@ function Main {
         
         # Downloading Log files
         $wc = New-Object System.Net.WebClient
-        $logStartUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Start-Log.ps1"
-        Write-Host "Attempting to download file from from: $logStartUri"
-        $logStartDownload = "$PSScriptRoot\Start-Log.ps1"
-        $wc.DownloadFile($orchestrationDir, $logStartDownload)        
+        $startLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Start-Log.ps1"
+        Write-Host "Attempting to download file from from: $startLogUri"
+        $startLogDownload = "$orchestrationDir\Start-Log.ps1"
+        $wc.DownloadFile($startLogUri, $startLogDownload)        
 
         $writeLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Write-Log.ps1"
         Write-Host "Attempting to download file from from: $writeLogUri"
-        $writeLogDownload = "$PSScriptRoot\Write-Log.ps1"
-        $wc.DownloadFile($orchestrationDir, $writeLogDownload)
+        $writeLogDownload = "$orchestrationDir\Write-Log.ps1"
+        $wc.DownloadFile($wri, $writeLogDownload)
 
-        $logFinishUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Finish-Log.ps1"
-        Write-Host "Attempting to download file from from: $logFinishUri"
-        $logFinishDownload = "$PSScriptRoot\Finish-Log.ps1"
-        $wc.DownloadFile($orchestrationDir, $logFinishDownload)
+        $finishLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Finish-Log.ps1"
+        Write-Host "Attempting to download file from from: $finishLogUri"
+        $finishLogDownload = "$orchestrationDir\Finish-Log.ps1"
+        $wc.DownloadFile($finishLogUri, $finishLogDownload)
 
         . "orchestrationDir\Start-Log.ps1"
         . "orchestrationDir\Write-Log.ps1"
