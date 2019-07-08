@@ -15,7 +15,7 @@ function Start-Log {
 
     Process{
         If (-Not (TestPath $LogPath)) {
-            New-Item -ItemType File -Path $LogPath | Out-Null
+            New-Item -ItemType Directory -Path $LogPath | Out-Null
         }
         $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
         #Check if file exists and delete if it does

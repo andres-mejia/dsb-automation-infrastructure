@@ -55,7 +55,7 @@ function Main {
         $writeLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Write-Log.ps1"
         Write-Host "Attempting to download file from from: $writeLogUri"
         $writeLogDownload = "$orchestrationDir\Write-Log.ps1"
-        $wc.DownloadFile($wri, $writeLogDownload)
+        $wc.DownloadFile($writeLogUri, $writeLogDownload)
 
         $finishLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Finish-Log.ps1"
         Write-Host "Attempting to download file from from: $finishLogUri"
