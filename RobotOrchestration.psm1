@@ -88,7 +88,6 @@ function Finish-Log {
 }
 
 function waitForService($servicesName, $serviceStatus) {
-
   # Get all services where DisplayName matches $serviceName and loop through each of them.
   foreach($service in (Get-Service -DisplayName $servicesName))
   {
@@ -123,17 +122,17 @@ function Connect-RobotToOrchestrator {
         )
 
     $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
-    ./Start-Log -LogPath $LogPath -LogName $LogName
+    Start-Log -LogPath $LogPath -LogName $LogName
 
     $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
     Write-Host "Robot exe is $robotExePath"
-    ./Write-Log -LogPath $fullLogPath -Message "Robot exe is $robotExePath" -Severity 'Info'
+    Write-Log -LogPath $fullLogPath -Message "Robot exe is $robotExePath" -Severity 'Info'
 
     if(!(Test-Path $robotExePath)) {
         Throw "No robot exe was found on the $env:computername"
     } else {
         Write-Host "Robot exe found at $robotExePath"
-        ./Write-Log -LogPath $fullLogPath -Message "Robot exe found at $robotExePath" -Severity 'Info'
+        Write-Log -LogPath $fullLogPath -Message "Robot exe found at $robotExePath" -Severity 'Info'
     }
 
     Try {
@@ -154,7 +153,7 @@ function Connect-RobotToOrchestrator {
         # If ($RobotKey -eq $null) {
         #     Throw ('No license key found for machine: $env:computername')
         # }
-        ./Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
+        Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
         Write-Host "License key for $env:computername is: $RobotKey"
 
         # Starting Robot
@@ -166,7 +165,7 @@ function Connect-RobotToOrchestrator {
         $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
         # if ($waitForRobotSVC -eq "Running") {
         # connect Robot to Orchestrator with Robot key
-        ./Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
+        Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
         Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
         # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
         Try {
@@ -175,11 +174,11 @@ function Connect-RobotToOrchestrator {
         Catch {
             if ($_.Exception) {
                 Write-Host "There was an error running the robot.exe connect command, exception: $_.Exception"
-                ./Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+                Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             }
             else {
                 Write-Host "There was an error running the robot.exe connect command, but the exception was empty"
-                ./Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
+                Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
             }
             Break
         }
@@ -187,11 +186,11 @@ function Connect-RobotToOrchestrator {
     Catch {
         if ($_.Exception) {
             Write-Host "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
-            ./Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
         }
         else {
             Write-Host "There was an error connecting the machine to $orchMachines, but the exception was empty"
-            ./Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
         }
         Break
     }
@@ -213,13 +212,13 @@ function Install-Filebeat {
     )
 
     Write-Host "Trying to install filebeat version: $FilebeatVersion"
-    ./Write-Log -LogPath $LogFile -Message "Trying to install filebeat version: $FilebeatVersion" -Severity 'Info'
+    Write-Log -LogPath $LogFile -Message "Trying to install filebeat version: $FilebeatVersion" -Severity 'Info'
 
     $beforeCd = Get-Location
 
     if ((Get-Service filebeat -ErrorAction SilentlyContinue)) {
         Write-Host "Filebeat service already installed, attempting to stop service"
-        ./Write-Log -LogPath $LogFile -Message "Filebeat service already installed, attempting to stop servcie" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Filebeat service already installed, attempting to stop servcie" -Severity 'Info'
         Try {
             $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
             $service.StopService()
@@ -228,7 +227,7 @@ function Install-Filebeat {
         Catch {
             cd $beforeCd
             Write-Host "There was an exception stopping Filebeat service: $_.Exception"
-            ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Break
         } 
     }
@@ -237,13 +236,13 @@ function Install-Filebeat {
 
         $url = "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-$FilebeatVersion-windows-x86.zip"
         Write-Host "Attempting to download Filebeat from: $url"
-        ./Write-Log -LogPath $LogFile -Message "Attempting to download from $url" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Attempting to download from $url" -Severity 'Info'
         $downloadedZip = "$InstallationPath\filebeat.zip"
         if (Test-Path $downloadedZip) {
             Remove-Item $downloadedZip -Recurse
         }
         Write-Host "Downloading to $downloadedZip"
-        ./Write-Log -LogPath $LogFile -Message "Downloading to $downloadedZip" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Downloading to $downloadedZip" -Severity 'Info'
 
         Try {
             $wc = New-Object System.Net.WebClient
@@ -252,25 +251,25 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading Filebeat: $_.Exception"
-            ./Write-Log -LogPath $LogFile -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error' -ExitGracefully $True
             Throw "There was an error downloading Filebeat: $_.Exception"
         }
 
         Write-Host "Expanding archive $downloadedZip"
-        ./Write-Log -LogPath $LogFile -Message "Expanding archive $downloadedZip" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Expanding archive $downloadedZip" -Severity 'Info'
 
         Try {
             Expand-Archive -Path $downloadedZip -DestinationPath 'C:\Program Files' -Force
         }
         Catch {
             Write-Host "There was an error unzipping Filebeat: $_.Exception"
-            ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             Throw "There was an error downloading Filebeat: $_.Exception"
         }
 
         $unzippedFile = "C:\Program Files\filebeat-$FilebeatVersion-windows-x86"
         Write-Host "Renaming $unzippedFile to Filebeat"
-        ./Write-Log -LogPath $LogFile -Message "Renaming $unzippedFile to Filebeat" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Renaming $unzippedFile to Filebeat" -Severity 'Info'
         
         Try {
             Rename-Item -Path $unzippedFile -NewName 'Filebeat' -Force -ErrorAction Stop
@@ -280,12 +279,12 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
-            ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             throw "There was an error renaming unzipped Filebeat dir: $_.Exception"
         }
 
         Write-Host "Retrieving installer script"
-        ./Write-Log -LogPath $LogFile -Message "Retrieving installer script" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Retrieving installer script" -Severity 'Info'
 
         $serviceInstaller = "C:\Program Files\Filebeat\install-service-filebeat.ps1"
         Remove-Item $serviceInstaller -Force
@@ -299,12 +298,12 @@ function Install-Filebeat {
         }
         Catch {
             Write-Host "There was an error downloading the filebeats config: $_.Exception"
-            ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             throw [System.IO.Exception] $_.Exception
         }
 
         Write-Host "Attempting to install Filebeats"
-        ./Write-Log -LogPath $LogFile -Message "Attempting to install Filebeats" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Attempting to install Filebeats" -Severity 'Info'
 
         Write-Host "Humio Token is $HumioIngestToken"
         Try {
@@ -314,7 +313,7 @@ function Install-Filebeat {
         Catch {
             cd $beforeCd
             Write-Host "There was an exception installing Filebeat: $_.Exception"
-            ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
             throw [System.IO.Exception] $_.Exception
         } 
 
@@ -322,7 +321,7 @@ function Install-Filebeat {
 
     # if (Test-Path 'C:\Program Files\Filebeat') {
     #     Write-Host "Filebeat folder still exists, trying to delete it"
-    #     ./Write-Log -LogPath $LogFile -Message "Filebeat folder still exists, trying to delete it" -Severity 'Info'
+    #     Write-Log -LogPath $LogFile -Message "Filebeat folder still exists, trying to delete it" -Severity 'Info'
     #     Try {
     #         Remove-Item 'C:\Program Files\Filebeat' -Recurse -Force -ErrorAction Stop
     #         # if (Test-Path 'C:\ProgramData\filebeat') {
@@ -331,13 +330,13 @@ function Install-Filebeat {
     #     }
     #     Catch {
     #         Write-Host "There was an exception uninstalling Filebeat: $_.Exception"
-    #         ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+    #         Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
     #         Break
     #     } 
     # }
 
     Write-Host "Retrieving filebeats config"
-    ./Write-Log -LogPath $LogFile -Message "Retrieving filebeats config" -Severity 'Info'
+    Write-Log -LogPath $LogFile -Message "Retrieving filebeats config" -Severity 'Info'
     
     $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
     Remove-Item $filebeatYaml -Force
@@ -351,34 +350,64 @@ function Install-Filebeat {
     }
     Catch {
         Write-Host "There was an error downloading the filebeats config: $_.Exception"
-        ./Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+        Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
         throw $_.Exception
     }
 
     Try {
     
     Write-Host "Trying to start Filebeat service"
-        ./Write-Log -LogPath $LogFile -Message "Trying to start Filebeat service" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Trying to start Filebeat service" -Severity 'Info'
         Start-Service filebeat -ErrorAction Stop
     }
     Catch {
         cd $beforeCd
         Write-Host "There was an exception starting the Filebeat service: $_.Exception"
-        ./Write-Log -LogPath $LogFile -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error' -ExitGracefully $True
+        Write-Log -LogPath $LogFile -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error' -ExitGracefully $True
         throw "There was an exception starting the Filebeat service: $_.Exception"
     }
 
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
     if ($service.State -eq "Running") {
         Write-Host "Filebeat Service started successfully"
-        ./Write-Log -LogPath $LogFile -Message "Filebeat Service started successfully" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Filebeat Service started successfully" -Severity 'Info'
     }
     else {
         cd $beforeCd
         Write-Host "Filebeats service is not running correctly"
-        ./Write-Log -LogPath $LogFile -Message "Filebeats service is not running correctly" -Severity 'Error'
+        Write-Log -LogPath $LogFile -Message "Filebeats service is not running correctly" -Severity 'Error'
         Throw "Filebeats service is not running correctly"
     }
 
     cd $beforeCd
+}
+
+function install-service-filebeat {
+    [CmdletBinding()]
+        Param (
+            [Parameter(Mandatory = $true)]
+            [string] $HumioIngestToken
+        )
+
+    # Delete and stop the service if it already exists.
+    if (Get-Service filebeat -ErrorAction SilentlyContinue) {
+    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+    $service.StopService()
+    Start-Sleep -s 1
+    $service.delete()
+    }
+
+    $workdir = Split-Path $MyInvocation.MyCommand.Path
+    $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
+    Write-Host "Elastic setting is $elasticToken"
+    # Create the new service.
+    New-Service -name filebeat `
+    -displayName Filebeat `
+    -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"output.elasticsearch.password=AwhoOLTo8KsRv6S3IIbQvUxR4uyw3tvQY8YVmHIkqoCk`""
+
+    # Attempt to set the service to delayed start using sc config.
+    Try {
+    Start-Process -FilePath sc.exe -ArgumentList 'config filebeat start=delayed-auto'
+    }
+    Catch { Write-Host "An error occured setting the service to delayed start." -ForegroundColor Red }
 }
