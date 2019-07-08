@@ -147,7 +147,7 @@ function Connect-RobotToOrchestrator {
         Try {
             Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
             Write-Host "Running robot.exe connection command"
-            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs-ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
+            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
         }
         Catch {
             if ($_.Exception) {

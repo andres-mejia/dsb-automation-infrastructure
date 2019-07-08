@@ -65,47 +65,49 @@ function Main {
             Throw "There was an error creating logfile: $_.Exception"
             Break
         }
-        Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity "Info"
     }   
 
     Process {
         Write-Host "Logging to file $LogFile"
-        Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity "Info"
 
         Write-Host "Connect Robot Orchestrator starts"
-        Write-Log -LogPath $LogFile -Message "Connect Robot Orchestrator starts" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Connect Robot Orchestrator starts" -Severity "Info"
 
         Write-Host "Tenant is $tenant"
-        Write-Log -LogPath $LogFile -Message "Tenant is $tenant" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Tenant is $tenant" -Severity "Info"
         
         Write-Host "Trying to install Filebeat"
-        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity 'Info'
+        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
         Try {
             Install-Filebeat -LogPath $LogFile -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw 'There was a problem installing Filebeats'
+            Break
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
-        Write-Host "Try running robot connection script"
+        Write-Host "Trying to run robot connection script"
+        Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
             Connect-RobotToOrchestrator -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
         }
 
         End {
             If($?){
                 Write-Host "Completed Successfully."
-                Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity 'Info'
+                Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity "Info"
                 Write-Host "Script is ending now."
             }
         }
