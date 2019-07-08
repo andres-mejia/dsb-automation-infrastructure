@@ -14,7 +14,7 @@ function Start-Log {
     )
 
     Process{
-        If (-Not (TestPath $LogPath)) {
+        If (-Not (Test-Path $LogPath)) {
             New-Item -ItemType Directory -Path $LogPath | Out-Null
         }
         $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
