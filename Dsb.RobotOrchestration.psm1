@@ -169,7 +169,9 @@ function Connect-RobotToOrchestrator {
         Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
         # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
         Try {
-            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
+            Write-Log -LogPath $fullLogPath -Message "Running connection command" -Severity 'Info'
+            Write-Host "Running connection command"
+            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey" -Wait -NoNewWindow
         }
         Catch {
             if ($_.Exception) {
@@ -187,15 +189,15 @@ function Connect-RobotToOrchestrator {
         if ($_.Exception) {
             Write-Host "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
             Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error' -ExitGracefully $True
+            Throw "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
         }
         else {
             Write-Host "There was an error connecting the machine to $orchMachines, but the exception was empty"
             Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error' -ExitGracefully $True
+            Throw "There was an error connecting the machine to $orchMachines, but the exception was empty"
         }
         Break
     }
-
-    Finish-Log
 }
 
 function Install-Filebeat {
