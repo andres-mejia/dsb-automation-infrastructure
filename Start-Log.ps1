@@ -35,4 +35,8 @@ function Start-Log {
             Throw "There was an error creating $logFullPath: $_.Exception"
         }
     }
+
+    If(-Not (Test-Path -Path $logFullPath)){
+        Throw "The log file should have been created but could not be found: $logFullPath"
+    }
 }
