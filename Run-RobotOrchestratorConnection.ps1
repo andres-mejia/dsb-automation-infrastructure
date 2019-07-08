@@ -44,11 +44,15 @@ function Main {
             Write-Host "Creating program file dir at: $orchestrationDir"
             New-Item -ItemType Directory -Path $orchestrationDir
         }
+        
+        $p = [Environment]::GetEnvironmentVariable("PSModulePath")
+        $p += ";C:\Program Files\WindowsPowerShell\Modules\"
+        [Environment]::SetEnvironmentVariable("PSModulePath", $p)
 
         $wc = New-Object System.Net.WebClient
-        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/RobotOrchestration.psd1"
+        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/RobotOrchestration.psm1"
         Write-Host "Attempting to download file from from: $orchModule"
-        $orchModuleDownload = "$orchestrationDir\RobotOrchestration.psd1"
+        $orchModuleDownload = "$orchestrationDir\RobotOrchestration.psm1"
         $wc.DownloadFile($orchModule, $orchModuleDownload)        
         
         # Downloading Log files
