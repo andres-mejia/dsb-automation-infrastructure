@@ -83,7 +83,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
         Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
+            Install-Filebeat -LogPath $sLogPath -LogName installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
