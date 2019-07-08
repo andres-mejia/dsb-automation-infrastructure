@@ -55,6 +55,8 @@ function Main {
         $orchModuleDownload = "$orchestrationDir\RobotOrchestration.psm1"
         $wc.DownloadFile($orchModule, $orchModuleDownload)        
         
+        Import-Module RobotOrchestration
+
         # Downloading Log files
         $wc = New-Object System.Net.WebClient
         $startLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Start-Log.ps1"
