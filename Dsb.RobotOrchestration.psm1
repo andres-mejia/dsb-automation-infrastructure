@@ -145,9 +145,9 @@ function Connect-RobotToOrchestrator {
         Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
         # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
         Try {
-            Write-Log -LogPath $fullLogPath -Message "Running connection command" -Severity 'Info'
-            Write-Host "Running connection command"
-            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs -Wait -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
+            Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
+            Write-Host "Running robot.exe connection command"
+            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs-ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
         }
         Catch {
             if ($_.Exception) {
@@ -160,6 +160,9 @@ function Connect-RobotToOrchestrator {
             }
             Break
         }
+
+        Write-Host "Result of running robot.exe connection command is $connectRobot"
+        Write-Log -LogPath $fullLogPath -Message "Result of running robot.exe connection command is $connectRobot" -Severity "Info"
     }
     Catch {
         if ($_.Exception) {
