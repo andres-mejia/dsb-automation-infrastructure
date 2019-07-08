@@ -54,7 +54,7 @@ function Write-Log
     $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
     $logString = "$now $Severity message='$Message' env=$Environment timeStamp=$now level=$Severity pcName=$env:computername"
     Try {
-        Add-Content -Path $LogPath -Value $logString
+        Add-Content -Path $LogPath -Value $logString -Force
     }
     Catch {
         Write-Host "There was an error writing a log to $LogPath"
@@ -147,7 +147,7 @@ function Connect-RobotToOrchestrator {
         Try {
             Write-Log -LogPath $fullLogPath -Message "Running connection command" -Severity 'Info'
             Write-Host "Running connection command"
-            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey" -Wait -NoNewWindow
+            $connectRobot = Start-Process -FilePath $robotExePath -Verb runAs -Wait -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
         }
         Catch {
             if ($_.Exception) {
