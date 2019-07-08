@@ -36,25 +36,26 @@ function Main {
 
         $global:tempDirectory = (Join-Path "C:\Users\Public" "Orchestration-Temp-$(Get-Date -f "yyyyMMddhhmmssfff")")
         Write-Host "Saving all temporary files to $script:tempDirectory"
-        Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
         
         # Downloading Log files
         $wc = New-Object System.Net.WebClient
         $logStartUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Log-Start.ps1"
         Write-Host "Attempting to download file from from: $logStartUri"
-        $logStartDownload = ".\Log-Start.ps1"
+        $logStartDownload = "$PSScriptRoot\Log-Start.ps1"
         $wc.DownloadFile($logStartUri, $logStartDownload)        
 
-        $writeLogtUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Write-Log.ps1"
-        Write-Host "Attempting to download file from from: $writeLogtUri"
-        $writeLogDownload = ".\Write-Log.ps1"
+        $writeLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Write-Log.ps1"
+        Write-Host "Attempting to download file from from: $writeLogUri"
+        $writeLogDownload = "$PSScriptRoot\Write-Log.ps1"
         $wc.DownloadFile($writeLogtUri, $writeLogDownload)
 
         $logFinishUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Log-Finish.ps1"
         Write-Host "Attempting to download file from from: $logFinishUri"
-        $logFinishDownload = ".\Log-Finish.ps1"
+        $logFinishDownload = "$PSScriptRoot\Log-Finish.ps1"
         $wc.DownloadFile($logFinishUri, $logFinishDownload)
+
+        Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
     }   
 
     Process {
@@ -280,6 +281,6 @@ function Install-Filebeat {
     cd $beforeCd
 }
 
-Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
+./Log-Start.ps1 -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
 Main
-Log-Finish -NoExit
+./Log-Finish.ps1 -NoExit
