@@ -19,9 +19,11 @@ $global:sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
 $global:sDebug = $true
 #Log File Info
-$global:sLogPath = "C:\WindowsAzure\Logs"
+$global:sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $global:sLogName = "Connect-Uipath-Robot-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $global:LogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
+# Orchestration script directory
+$global:orchestrationDir = "C:\Program Files\AutomationAzureOrchestration"
 #Orchestrator SSL check
 $sslCheck = $false
 
@@ -43,18 +45,23 @@ function Main {
         $logStartUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Log-Start.ps1"
         Write-Host "Attempting to download file from from: $logStartUri"
         $logStartDownload = "$PSScriptRoot\Log-Start.ps1"
-        $wc.DownloadFile($logStartUri, $logStartDownload)        
+        $wc.DownloadFile($orchestrationDir, $logStartDownload)        
 
         $writeLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Write-Log.ps1"
         Write-Host "Attempting to download file from from: $writeLogUri"
         $writeLogDownload = "$PSScriptRoot\Write-Log.ps1"
-        $wc.DownloadFile($writeLogtUri, $writeLogDownload)
+        $wc.DownloadFile($orchestrationDir, $writeLogDownload)
 
         $logFinishUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Log-Finish.ps1"
         Write-Host "Attempting to download file from from: $logFinishUri"
         $logFinishDownload = "$PSScriptRoot\Log-Finish.ps1"
-        $wc.DownloadFile($logFinishUri, $logFinishDownload)
+        $wc.DownloadFile($orchestrationDir, $logFinishDownload)
 
+        . "orchestrationDir\Log-Start.ps1"
+        . "orchestrationDir\Write-Log.ps1"
+        . "orchestrationDir\Log-Finish.ps1"
+
+        Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
         Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
     }   
 
@@ -281,6 +288,6 @@ function Install-Filebeat {
     cd $beforeCd
 }
 
-./Log-Start.ps1 -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
+
 Main
-./Log-Finish.ps1 -NoExit
+Log-Finish -NoExit
