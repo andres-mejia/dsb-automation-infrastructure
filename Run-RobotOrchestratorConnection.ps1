@@ -113,4 +113,4 @@ function Main {
 }
 
 Main
-Finish-Log -NoExit
+Finish-Log

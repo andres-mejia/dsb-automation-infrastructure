@@ -195,7 +195,7 @@ function Connect-RobotToOrchestrator {
         Break
     }
 
-    Finish-Log -NoExit
+    Finish-Log
 }
 
 function Install-Filebeat {
