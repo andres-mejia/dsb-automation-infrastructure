@@ -66,11 +66,12 @@ function Main {
         . "orchestrationDir\Finish-Log.ps1"
 
         Try {
-            Start-Log -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
+            ./Start-Log -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion -ErrorAction Stop
         }
         Catch {
-            Write-Host "There was an error creating logfile"
+            Write-Host "There was an error creating logfile: $_.Exception"
             Throw "There was an error creating logfile: $_.Exception"
+            Break
         }
         Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
     }   

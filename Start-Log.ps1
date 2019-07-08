@@ -1,16 +1,12 @@
 function Start-Log {
 
     [CmdletBinding()]
-
     param (
         [Parameter(Mandatory=$true)]
         [string]$LogPath,
 
         [Parameter(Mandatory=$true)]
-        [string]$LogName,
-
-        [Parameter(Mandatory=$true)]
-        [string]$ScriptVersion
+        [string]$LogName
     )
 
     If (-Not (Test-Path $LogPath)) {
@@ -20,7 +16,7 @@ function Start-Log {
         }
         Catch {
             Write-Host "There was an error creating $LogPath"
-            Throw "There was an error creating $LogPath: $_.Exception"
+            Throw "There was an error creating {$LogPath}: $_.Exception"
         }
     }
     $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
@@ -28,11 +24,11 @@ function Start-Log {
     If(-Not (Test-Path -Path $logFullPath)){
         Write-Host "There was no logfile at $logFullPath, trying to create it now"
         Try {
-            New-Item -Path $LogPath -Name $LogName -ItemType File
+            New-Item -Path $LogPath -Name $LogName -ItemType File -ErrorAction Stop | Out-Null
         }
         Catch {
             Write-Host "There was an error creating $logFullPath"
-            Throw "There was an error creating $logFullPath: $_.Exception"
+            Throw "There was an error creating {$logFullPath}: $_.Exception"
         }
     }
 
