@@ -47,9 +47,9 @@ function Main {
         
         # Downloading Log files
         $wc = New-Object System.Net.WebClient
-        $logStartUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Log-Start.ps1"
+        $logStartUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Start-Log.ps1"
         Write-Host "Attempting to download file from from: $logStartUri"
-        $logStartDownload = "$PSScriptRoot\Log-Start.ps1"
+        $logStartDownload = "$PSScriptRoot\Start-Log.ps1"
         $wc.DownloadFile($orchestrationDir, $logStartDownload)        
 
         $writeLogUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Write-Log.ps1"
@@ -57,17 +57,17 @@ function Main {
         $writeLogDownload = "$PSScriptRoot\Write-Log.ps1"
         $wc.DownloadFile($orchestrationDir, $writeLogDownload)
 
-        $logFinishUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Log-Finish.ps1"
+        $logFinishUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Finish-Log.ps1"
         Write-Host "Attempting to download file from from: $logFinishUri"
-        $logFinishDownload = "$PSScriptRoot\Log-Finish.ps1"
+        $logFinishDownload = "$PSScriptRoot\Finish-Log.ps1"
         $wc.DownloadFile($orchestrationDir, $logFinishDownload)
 
-        . "orchestrationDir\Log-Start.ps1"
+        . "orchestrationDir\Start-Log.ps1"
         . "orchestrationDir\Write-Log.ps1"
-        . "orchestrationDir\Log-Finish.ps1"
+        . "orchestrationDir\Finish-Log.ps1"
 
-        Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
-        Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
+        ./Start-Log -LogPath $sLogPath -LogName $sLogName -ScriptVersion $sScriptVersion
+        ./Write-Log -LogPath $LogFile -Message "Saving all temporary files to $script:tempDirectory" -Severity 'Info'
     }   
 
     Process {
@@ -293,6 +293,5 @@ function Install-Filebeat {
     cd $beforeCd
 }
 
-
 Main
-Log-Finish -NoExit
+./Finish-Log -NoExit

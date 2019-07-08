@@ -1,4 +1,4 @@
-function Log-Start {
+function Start-Log {
 
     [CmdletBinding()]
 

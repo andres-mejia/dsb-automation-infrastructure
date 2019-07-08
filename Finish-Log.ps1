@@ -12,7 +12,7 @@
   .OUTPUTS
     None
 #>
-function Log-Finish {
+function Finish-Log {
 
     [CmdletBinding()]
 
