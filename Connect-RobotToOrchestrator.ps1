@@ -1,4 +1,3 @@
-
 function waitForService($servicesName, $serviceStatus) {
   # Get all services where DisplayName matches $serviceName and loop through each of them.
   foreach($service in (Get-Service -DisplayName $servicesName))
