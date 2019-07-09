@@ -53,9 +53,12 @@ Try {
     Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
     Write-Host "License key for $env:computername is: $RobotKey"
 
-    # Starting Robot
-    Start-Process -filepath $robotExePath -verb runas
+    $service = Get-Service -DisplayName 'UiPath Robot*'
+    If ($service.Status -eq "Running") {
+        $service | Stop-Service
+    }
 
+    Start-Process -filepath $robotExePath -verb runas
     $waitForRobotSVC = waitForService "UiPath Robot*" "Running"
 
     $env = "dev"

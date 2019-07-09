@@ -1,6 +1,0 @@
-2019-07-09T09:27:04+02:00 Info message='Robot exe is C:\Program Files (x86)\UiPath\Studio\UiRobot.exe' env= timeStamp=2019-07-09T09:27:04+02:00 level=Info pcName=DSBWPC502128
-2019-07-09T09:27:04+02:00 Info message='Robot exe found at C:\Program Files (x86)\UiPath\Studio\UiRobot.exe' env= timeStamp=2019-07-09T09:27:04+02:00 level=Info pcName=DSBWPC502128
-2019-07-09T09:27:04+02:00 Info message='License key for DSBWPC502128 is: ælasdfjk' env= timeStamp=2019-07-09T09:27:04+02:00 level=Info pcName=DSBWPC502128
-2019-07-09T09:27:04+02:00 Info message='Orchestrator URL to connect to is: https://orchestrator-app-ælasdjf.azure.dsb.dk' env= timeStamp=2019-07-09T09:27:04+02:00 level=Info pcName=DSBWPC502128
-2019-07-09T09:27:04+02:00 Info message='Running robot.exe connection command' env= timeStamp=2019-07-09T09:27:04+02:00 level=Info pcName=DSBWPC502128
-2019-07-09T09:27:07+02:00 Info message='No error thrown when running robot connection script' env= timeStamp=2019-07-09T09:27:07+02:00 level=Info pcName=DSBWPC502128
