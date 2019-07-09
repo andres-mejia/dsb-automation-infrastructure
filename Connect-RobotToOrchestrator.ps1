@@ -52,20 +52,22 @@ Try {
     # }
     Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
     Write-Host "License key for $env:computername is: $RobotKey"
+    $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
+    # if ($waitForRobotSVC -eq "Running") {
+    # connect Robot to Orchestrator with Robot key
+    Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
+    Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
 
     $service = Get-Service -DisplayName 'UiPath Robot*'
     If ($service.Status -eq "Running") {
+        Write-Log -LogPath $fullLogPath -Message "Robot service was running. Stopping it now" -Severity 'Info'
+        Write-Host "Robot service was running. Stopping it now"
         $service | Stop-Service
     }
 
     Start-Process -filepath $robotExePath -verb runas
     $waitForRobotSVC = waitForService "UiPath Robot*" "Running"
 
-    $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
-    # if ($waitForRobotSVC -eq "Running") {
-    # connect Robot to Orchestrator with Robot key
-    Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
-    Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
     # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
     Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
     Write-Host "Running robot.exe connection command"
