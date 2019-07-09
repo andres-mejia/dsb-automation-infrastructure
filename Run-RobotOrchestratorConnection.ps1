@@ -81,6 +81,9 @@ function Main {
     }   
 
     Process {
+        Write-Host "User is: $env:username"
+        Write-Log -LogPath $LogFile -Message "User is: $env:username" -Severity "Info"
+        
         Write-Host "Logging to file $LogFile"
         Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity "Info"
 
