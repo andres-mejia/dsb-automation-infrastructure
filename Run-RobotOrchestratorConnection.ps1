@@ -19,11 +19,12 @@ $script:sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
 $script:sDebug = $true
 #Log File Info
+$script:connectRoboPath = "C:\Program Files\AutomationAzureOrchestration"
 $script:sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $script:overallLog = "Run-Robot-Orchestrator-Connection-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $script:LogFile = Join-Path -Path $sLogPath -ChildPath $overallLog
 # Orchestration script directory
-$script:orchestrationDir = "C:\Program Files\WindowsPowerShell\Modules\Dsb.RobotOrchestration"
+$script:orchModuleDir = "C:\Program Files\WindowsPowerShell\Modules\Dsb.RobotOrchestration"
 $script:scheduledTaskScript = "Connect-Robot-Orchestrator-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $script:installFilebeatScript = "Install-Filebeat-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 #Orchestrator SSL check
@@ -41,16 +42,21 @@ function Main {
         Write-Host "Saving all temporary files to $script:tempDirectory"
         New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
-        If (-Not (Test-Path $orchestrationDir)) {
-            Write-Host "Creating program file dir at: $orchestrationDir"
-            New-Item -ItemType Directory -Path $orchestrationDir
+        If (-Not (Test-Path $orchModuleDir)) {
+            Write-Host "Creating program file dir at: $orchModuleDir"
+            New-Item -ItemType Directory -Path $orchModuleDir
         }
         
         $wc = New-Object System.Net.WebClient
         $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
         Write-Host "Attempting to download file from from: $orchModule"
-        $orchModuleDownload = "$orchestrationDir\Dsb.RobotOrchestration.psm1"
-        $wc.DownloadFile($orchModule, $orchModuleDownload)        
+        $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
+        $wc.DownloadFile($orchModule, $orchModuleDownload)     
+
+        $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
+        Write-Host "Attempting to download file from from: $connectRobo"
+        $script:connectRoboDownload = "$connectRoboPath\Connect-RobotToOrchestrator.ps1"
+        $wc.DownloadFile($connectRobo, $connectRoboDownload)        
 
         $p = [Environment]::GetEnvironmentVariable("PSModulePath")
         $p += ";C:\Program Files\WindowsPowerShell\Modules\"
@@ -97,12 +103,15 @@ function Main {
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            Connect-RobotToOrchestrator -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
+            # Register-ScheduledJob -Name 'ConnectRobotOrchestrator' -FilePath $connectRoboDownload -Trigger (New-JobTrigger -Once -At (Get-Date -Hour 0 -Minute 00 -Second 00) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue))
+
+            $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
+            Break
         }
 
         End {
