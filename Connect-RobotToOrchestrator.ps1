@@ -77,6 +77,7 @@ Try {
     )
     $connectOutput = cmd /c $robotExePath $cmdArgList '2>&1'
     If (-Not (($connectOutput -eq $null) -Or ($connectOutput -like "*Orchestrator already connected!*"))) {
+        Write-Log -LogPath $fullLogPath -Message "The robot was not connected correctly: $connectOutput" -Severity 'Error'
         Throw $connectOutput
     }
     Write-Host "Connect robot output is: $connectOutput"
