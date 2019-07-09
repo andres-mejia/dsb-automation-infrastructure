@@ -72,29 +72,29 @@ Try {
     Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
     Write-Host "Running robot.exe connection command"
     Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect"
-    # $cmdArgList = @(
-    #     "--connect",
-    #     "-url", "$orchestratorUrl",
-    #     "-key", "$RobotKey"
-    # )
-    # Try  {
-    #     $connectOutput = cmd /c $robotExePath $cmdArgList '2>&1'
-    #     Write-Host "Connect robot output is: $connectOutput"
-    #     Write-Log -LogPath $fullLogPath -Message "Connect robot output is: $connectOutput" -Severity 'Info'
-    # }
-    # Catch {
-    #     if ($_.Exception) {
-    #         Write-Host "There was an error connecting the machine to $orchestratorUrl, exception: $_.Exception"
-    #         Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
-    #         Throw "There was an error connecting the machine to $orchestratorUrl, exception: $_.Exception"
-    #     }
-    #     else {
-    #         Write-Host "There was an error connecting the machine to $orchestratorUrl, but the exception was empty"
-    #         Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error'
-    #         Throw "There was an error connecting the machine to $orchestratorUrl, but the exception was empty"
-    #     }
-    #     Break   
-    # }
+    $cmdArgList = @(
+        "--connect",
+        "-url", "$orchestratorUrl",
+        "-key", "$RobotKey"
+    )
+    Try  {
+        $connectOutput = cmd /c $robotExePath $cmdArgList '2>&1'
+        Write-Host "Connect robot output is: $connectOutput"
+        Write-Log -LogPath $fullLogPath -Message "Connect robot output is: $connectOutput" -Severity 'Info'
+    }
+    Catch {
+        if ($_.Exception) {
+            Write-Host "There was an error connecting the machine to $orchestratorUrl, exception: $_.Exception"
+            Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
+            Throw "There was an error connecting the machine to $orchestratorUrl, exception: $_.Exception"
+        }
+        else {
+            Write-Host "There was an error connecting the machine to $orchestratorUrl, but the exception was empty"
+            Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error'
+            Throw "There was an error connecting the machine to $orchestratorUrl, but the exception was empty"
+        }
+        Break   
+    }
     If (-Not (($connectOutput -eq $null) -Or ($connectOutput -like "*Orchestrator already connected!*"))) {
         Write-Log -LogPath $fullLogPath -Message "The robot was not connected correctly: $connectOutput" -Severity 'Info'
         Throw $connectOutput
