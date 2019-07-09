@@ -96,8 +96,6 @@ function Main {
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
-        Write-Log -LogPath $LogFile -Message "Test Error" -Severity "Error"
-
         Try {
             Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
         }
