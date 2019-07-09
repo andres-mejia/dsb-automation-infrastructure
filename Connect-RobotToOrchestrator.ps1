@@ -16,20 +16,19 @@ function waitForService($servicesName, $serviceStatus) {
 
 }
 
-[CmdletBinding()]
-    Param (
-        [Parameter(Mandatory = $true)]
-        [string] $LogPath,
+Param (
+    [Parameter(Mandatory = $true)]
+    [string] $LogPath,
 
-        [Parameter(Mandatory = $true)]
-        [string] $LogName,
+    [Parameter(Mandatory = $true)]
+    [string] $LogName,
 
-        [Parameter(Mandatory = $true)]
-        [string] $RobotKey,
+    [Parameter(Mandatory = $true)]
+    [string] $RobotKey,
 
-        [Parameter(Mandatory = $true)]
-        [string] $Environment
-    )
+    [Parameter(Mandatory = $true)]
+    [string] $Environment
+)
 
 $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
 Start-Log -LogPath $LogPath -LogName $LogName

@@ -46,7 +46,12 @@ function Main {
             Write-Host "Creating program file dir at: $orchModuleDir"
             New-Item -ItemType Directory -Path $orchModuleDir
         }
-        
+
+        If (-Not (Test-Path $connectRoboPath)) {
+            Write-Host "Creating connect robo dir at: $connectRoboPath"
+            New-Item -ItemType Directory -Path $connectRoboPath
+        }
+
         $wc = New-Object System.Net.WebClient
         $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
         Write-Host "Attempting to download file from from: $orchModule"
@@ -89,7 +94,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
         Try {
-            Install-Filebeat -LogPath $sLogPath -LogName installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
@@ -104,8 +109,14 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
             # Register-ScheduledJob -Name 'ConnectRobotOrchestrator' -FilePath $connectRoboDownload -Trigger (New-JobTrigger -Once -At (Get-Date -Hour 0 -Minute 00 -Second 00) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue))
-
-            $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
+            Write-Host "Connect robot script path is $connectRoboDownload"
+            $args = @()
+            $args += ("-LogPath", "`"$sLogPath`"")
+            $args += ("-LogName", "`"$scheduledTaskScript`"")
+            $args += ("-RobotKey", "`"$RobotKey`"")
+            $args += ("-Environment", "`"$Environment`"")
+            $args += ("-ErrorAction", "`"Stop`"")
+            & $connectRoboDownload $args
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
