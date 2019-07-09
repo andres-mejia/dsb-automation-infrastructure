@@ -79,6 +79,8 @@ Try {
     If (-Not (($connectOutput -eq $null) -Or ($connectOutput -like "*Orchestrator already connected!*"))) {
         Throw $connectOutput
     }
+    Write-Host "Connect robot output is: $connectOutput"
+    Write-Log -LogPath $fullLogPath -Message "Connect robot output is: $connectOutput" -Severity 'Info'
 }
 Catch {
     if ($_.Exception) {
