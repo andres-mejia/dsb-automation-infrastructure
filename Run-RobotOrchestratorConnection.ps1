@@ -110,13 +110,7 @@ function Main {
         Try {
             # Register-ScheduledJob -Name 'ConnectRobotOrchestrator' -FilePath $connectRoboDownload -Trigger (New-JobTrigger -Once -At (Get-Date -Hour 0 -Minute 00 -Second 00) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue))
             Write-Host "Connect robot script path is $connectRoboDownload"
-            $args = @()
-            $args += ("-LogPath", "`"$sLogPath`"")
-            $args += ("-LogName", "`"$scheduledTaskScript`"")
-            $args += ("-RobotKey", "`"$RobotKey`"")
-            $args += ("-Environment", "`"$Environment`"")
-            $args += ("-ErrorAction", "`"Stop`"")
-            & $connectRoboDownload $args
+            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"

@@ -65,7 +65,6 @@ Try {
     Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
     Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
     # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
-
     Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
     Write-Host "Running robot.exe connection command"
     Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect"
