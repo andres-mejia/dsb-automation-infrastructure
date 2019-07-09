@@ -1,21 +1,3 @@
-function waitForService($servicesName, $serviceStatus) {
-  # Get all services where DisplayName matches $serviceName and loop through each of them.
-  foreach($service in (Get-Service -DisplayName $servicesName))
-  {
-      if($serviceStatus -eq 'Running') {
-        Start-Service $service.Name
-      }
-      if($serviceStatus -eq "Stopped" ) {
-        Stop-Service $service.Name
-      }
-      # Wait for the service to reach the $serviceStatus or a maximum of specified time
-      $service.WaitForStatus($serviceStatus, '00:01:20')
- }
-
- return $serviceStatus
-
-}
-
 Param (
     [Parameter(Mandatory = $true)]
     [string] $LogPath,
@@ -30,14 +12,18 @@ Param (
     [string] $Environment
 )
 
+$p = [Environment]::GetEnvironmentVariable("PSModulePath")
+$p += ";C:\Program Files\WindowsPowerShell\Modules\"
+[Environment]::SetEnvironmentVariable("PSModulePath", $p)
+
+Import-Module Dsb.RobotOrchestration
+
 $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
 Start-Log -LogPath $LogPath -LogName $LogName
 
 $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
 Write-Host "Robot exe is $robotExePath"
 Write-Log -LogPath $fullLogPath -Message "Robot exe is $robotExePath" -Severity 'Info'
-
-Import-Module Dsb.RobotOrchestration
 
 If (-Not (Test-Path $robotExePath)) {
     Throw "No robot exe was found on the $env:computername"
@@ -82,6 +68,7 @@ Try {
 
     Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
     Write-Host "Running robot.exe connection command"
+    Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect"
     Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
 }
 Catch {
