@@ -69,7 +69,15 @@ Try {
     Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
     Write-Host "Running robot.exe connection command"
     Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect"
-    Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--connect -url $orchestratorUrl -key $RobotKey"
+    $cmdArgList = @(
+        "--connect",
+        "-url", "$orchestratorUrl",
+        "-key", "$RobotKey"
+    )
+    $connectOutput = cmd /c $robotExePath $cmdArgList '2>&1'
+    If (-Not (($connectOutput -eq $null) -Or ($connectOutput -like "*Orchestrator already connected!*"))) {
+        Throw $connectOutput
+    }
 }
 Catch {
     if ($_.Exception) {
@@ -85,5 +93,5 @@ Catch {
     Break
 }
 
-Write-Log -LogPath $fullLogPath -Message "No error thrown when running robot connection script" -Severity "Info"
-Write-Host "No error thrown when running robot connection script"
+Write-Log -LogPath $fullLogPath -Message "Robot was connected correctly" -Severity "Info"
+Write-Host "Robot was connected correctly"
