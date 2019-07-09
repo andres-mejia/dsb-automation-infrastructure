@@ -53,8 +53,6 @@ Try {
     Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
     Write-Host "License key for $env:computername is: $RobotKey"
     $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
-    # if ($waitForRobotSVC -eq "Running") {
-    # connect Robot to Orchestrator with Robot key
     Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
     Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
 

@@ -96,6 +96,8 @@ function Main {
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
+        Write-Log -LogPath $LogFile -Message "Test Error" -Severity "Error"
+
         Try {
             Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
         }
@@ -103,7 +105,6 @@ function Main {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw 'There was a problem installing Filebeats'
-            Break
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
@@ -112,7 +113,6 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
             # Register-ScheduledJob -Name 'ConnectRobotOrchestrator' -FilePath $connectRoboDownload -Trigger (New-JobTrigger -Once -At (Get-Date -Hour 0 -Minute 00 -Second 00) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue))
-            Write-Host "Connect robot script path is $connectRoboDownload"
             & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
         }
         Catch {
