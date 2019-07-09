@@ -61,7 +61,6 @@ Try {
     Start-Process -filepath $robotExePath -verb runas
     $waitForRobotSVC = waitForService "UiPath Robot*" "Running"
 
-    $env = "dev"
     $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
     # if ($waitForRobotSVC -eq "Running") {
     # connect Robot to Orchestrator with Robot key
