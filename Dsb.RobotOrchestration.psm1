@@ -9,7 +9,7 @@ function Start-Log {
         [string]$LogName
     )
 
-    If (-Not (Test-Path $LogPath)) {
+    If (-Not (Test-Path -Path $LogPath)) {
         Write-Host "There was no directory at $LogPath, trying to create it now"
         Try {
             New-Item -ItemType Directory -Path $LogPath -ErrorAction Stop | Out-Null
@@ -19,8 +19,11 @@ function Start-Log {
             Throw "There was an error creating {$LogPath}: $_.Exception"
         }
     }
+    Else {
+        Write-Host "A directory existed at $LogPath, not trying to create one"
+    }
+
     $logFullPath = Join-Path -Path $LogPath -ChildPath $LogName
-    #Check if file exists and delete if it does
     If(-Not (Test-Path -Path $logFullPath)){
         Write-Host "There was no logfile at $logFullPath, trying to create it now"
         Try {
