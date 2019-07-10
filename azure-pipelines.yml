@@ -17,13 +17,10 @@ stages:
       inputs:
         versionSpec: 4.x
         checkLatest: true
-
     - powershell: |
         Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
         Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
-
-    - task: PowerShell@2
-      inputs:     
-        filePath: '$(Build.SourcesDirectory)/Invoke-PesterTests.ps1'
-  
+    - powershell: |
+        Invoke-Pester -PassThru
+      displayName: Run pester tests
