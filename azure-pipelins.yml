@@ -1,0 +1,29 @@
+trigger:
+  branches:
+    include:
+    - '*'
+
+stages:
+- stage: RunTests
+  displayName: Run Tests
+  jobs:
+  - job: PesterTests
+    displayName: Run Pester tests for powershell scripts 
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+    - task: NuGetToolInstaller@0
+      displayName: Use NuGet 4.x
+      inputs:
+        versionSpec: 4.x
+        checkLatest: true
+
+    - powershell: |
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+        Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+      displayName: Install Nuget and update Pester
+
+    - task: PowerShell@2
+      inputs:     
+        filePath: '$(Build.SourcesDirectory)/InvokePesterTests.ps1'
+  
