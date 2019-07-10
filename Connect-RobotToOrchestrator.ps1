@@ -9,7 +9,7 @@ Param (
     [string] $RobotKey,
 
     [Parameter(Mandatory = $true)]
-    [string] $Environment
+    [string] $OrchestratorUrl
 )
 
 $p = [Environment]::GetEnvironmentVariable("PSModulePath")
@@ -52,9 +52,8 @@ Try {
     # }
     Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
     Write-Host "License key for $env:computername is: $RobotKey"
-    $orchestratorUrl = "https://orchestrator-app-${Environment}.azure.dsb.dk"
-    Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $orchestratorUrl" -Severity 'Info'
-    Write-Host "Orchestrator URL to connect to is: $orchestratorUrl"
+    Write-Log -LogPath $fullLogPath -Message "Orchestrator URL to connect to is: $OrchestratorUrl" -Severity 'Info'
+    Write-Host "Orchestrator URL to connect to is: $OrchestratorUrl"
 
     $service = Get-Service -DisplayName 'UiPath Robot*'
     If ($service.Status -eq "Running") {
@@ -72,7 +71,7 @@ Try {
     Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect"
     $cmdArgList = @(
         "--connect",
-        "-url", "$orchestratorUrl",
+        "-url", "$OrchestratorUrl",
         "-key", "$RobotKey"
     )
     Try  {
@@ -82,14 +81,14 @@ Try {
     }
     Catch {
         if ($_.Exception) {
-            Write-Host "There was an error connecting the machine to $orchestratorUrl, exception: $_.Exception"
+            Write-Host "There was an error connecting the machine to $OrchestratorUrl, exception: $_.Exception"
             Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
-            Throw "There was an error connecting the machine to $orchestratorUrl, exception: $_.Exception"
+            Throw "There was an error connecting the machine to $OrchestratorUrl, exception: $_.Exception"
         }
         else {
-            Write-Host "There was an error connecting the machine to $orchestratorUrl, but the exception was empty"
+            Write-Host "There was an error connecting the machine to $OrchestratorUrl, but the exception was empty"
             Write-Log -LogPath $fullLogPath -Message "There was an error, but it was blank" -Severity 'Error'
-            Throw "There was an error connecting the machine to $orchestratorUrl, but the exception was empty"
+            Throw "There was an error connecting the machine to $OrchestratorUrl, but the exception was empty"
         }
         Break   
     }
