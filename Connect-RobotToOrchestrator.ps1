@@ -26,6 +26,7 @@ Write-Host "Robot exe is $robotExePath"
 Write-Log -LogPath $fullLogPath -Message "Robot exe is $robotExePath" -Severity 'Info'
 
 If (-Not (Test-Path $robotExePath)) {
+    Write-Log -LogPath $fullLogPath -Message "Robot exe was not found" -Severity 'Error'
     Throw "No robot exe was found on the $env:computername"
 } else {
     Write-Host "Robot exe found at $robotExePath"
