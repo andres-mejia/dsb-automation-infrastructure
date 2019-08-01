@@ -18,7 +18,7 @@ Write-Host "Elastic setting is $elasticToken"
 # Create the new service.
 New-Service -name filebeat `
   -displayName Filebeat `
-  -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"output.elasticsearch.password=AwhoOLTo8KsRv6S3IIbQvUxR4uyw3tvQY8YVmHIkqoCk`""
+  -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"$elasticToken`""
 
 # Attempt to set the service to delayed start using sc config.
 Try {
