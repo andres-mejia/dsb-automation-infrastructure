@@ -110,6 +110,15 @@ function Main {
         Write-Host "Attempting to schedule robot connection script located at: $connectRoboDownload"
         Write-Log -LogPath $LogFile -Message "Attempting to schedule robot connection script located at: $connectRoboDownload" -Severity "Info"        
         $jobName = 'ConnectUiPathRobotOrchestrator'
+        $existingJobs = Get-ScheduledJob
+        
+        ForEach ($job in $existingJobs) {
+            If ($job.Name -eq $jobName) {
+                Write-Host "The job with name: $jobName existed, unregistering now"
+                Write-Log -LogPath $LogFile -Message "The job with name: $jobName existed, unregistering now" -Severity "Info"
+                Unregister-ScheduledJob $jobName
+            }
+        }
 
         Try {
             $repeat = (New-TimeSpan -Minutes 5)
