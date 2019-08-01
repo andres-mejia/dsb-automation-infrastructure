@@ -233,8 +233,7 @@ function Install-Filebeat {
     }
 
     Try {
-    
-    Write-Host "Trying to start Filebeat service"
+        Write-Host "Trying to start Filebeat service"
         Write-Log -LogPath $fullLogPath -Message "Trying to start Filebeat service" -Severity 'Info'
         Start-Service filebeat -ErrorAction Stop
     }
