@@ -230,6 +230,7 @@ function Install-Filebeat {
         Write-Host "There was an error downloading the filebeats config: $_.Exception"
         Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
         throw $_.Exception
+        break
     }
 
     Try {
@@ -242,6 +243,7 @@ function Install-Filebeat {
         Write-Host "There was an exception starting the Filebeat service: $_.Exception"
         Write-Log -LogPath $fullLogPath -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error'
         throw "There was an exception starting the Filebeat service: $_.Exception"
+        break
     }
 
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
@@ -253,38 +255,9 @@ function Install-Filebeat {
         cd $beforeCd
         Write-Host "Filebeats service is not running correctly"
         Write-Log -LogPath $fullLogPath -Message "Filebeats service is not running correctly" -Severity 'Error'
-        Throw "Filebeats service is not running correctly"
+        throw "Filebeats service is not running correctly"
+        break
     }
 
     cd $beforeCd
-}
-
-function install-service-filebeat {
-    [CmdletBinding()]
-        Param (
-            [Parameter(Mandatory = $true)]
-            [string] $HumioIngestToken
-        )
-
-    # Delete and stop the service if it already exists.
-    if (Get-Service filebeat -ErrorAction SilentlyContinue) {
-    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
-    $service.StopService()
-    Start-Sleep -s 1
-    $service.delete()
-    }
-
-    $workdir = Split-Path $MyInvocation.MyCommand.Path
-    $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
-    Write-Host "Elastic setting is $elasticToken"
-    # Create the new service.
-    New-Service -name filebeat `
-    -displayName Filebeat `
-    -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"output.elasticsearch.password=AwhoOLTo8KsRv6S3IIbQvUxR4uyw3tvQY8YVmHIkqoCk`""
-
-    # Attempt to set the service to delayed start using sc config.
-    Try {
-    Start-Process -FilePath sc.exe -ArgumentList 'config filebeat start=delayed-auto'
-    }
-    Catch { Write-Host "An error occured setting the service to delayed start." -ForegroundColor Red }
 }
