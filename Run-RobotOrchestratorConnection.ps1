@@ -112,18 +112,11 @@ function Main {
         $jobName = 'ConnectUiPathRobotOrchestrator'
 
         Try {
-            $cmdArgList = @{
-                "-LogPath" = $sLogPath;
-                "-LogName" = $scheduledTaskScript;
-                "-OrchestratorUrl" = $OrchestratorUrl;
-                "-RobotKey" = "$RobotKey";
-            }
-            Write-Host "Command argument list is: $cmdArgList"
             $repeat = (New-TimeSpan -Minutes 5)
             $trigger = New-JobTrigger -Once -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat
             $invokeScriptContent = {   
                 param($scriptPath, $logPath, $logName, $orchestratorUrl, $robotKey)
-                & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -RobotKey $robotKey
+                Start-Process powershell.exe -Wait -WindowStyle Hidden -ArgumentList "-File $scriptPath", "-LogPath $logPath", "-LogName $logName", "-OrchestratorUrl $orchestratorUrl", "-RobotKey $robotKey" 
             }
             Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$RobotKey -Trigger $trigger
         }
