@@ -202,7 +202,7 @@ function Install-Filebeat {
         Write-Host "Humio Token is $HumioIngestToken"
         Try {
             cd 'C:\Program Files\Filebeat'
-            PowerShell.exe -ExecutionPolicy UnRestricted -command ".\install-service-filebeat.ps1 -HumioIngestToken '$HumioIngestToken'" -ErrorAction Stop 
+            custom-filebeat-install -HumioIngestToken '$HumioIngestToken' -ErrorAction Stop 
         }
         Catch {
             cd $beforeCd
@@ -252,12 +252,45 @@ function Install-Filebeat {
         Write-Log -LogPath $fullLogPath -Message "Filebeat Service started successfully" -Severity 'Info'
     }
     else {
-        cd $beforeCd
         Write-Host "Filebeats service is not running correctly"
         Write-Log -LogPath $fullLogPath -Message "Filebeats service is not running correctly" -Severity 'Error'
+        cd $beforeCd
         throw "Filebeats service is not running correctly"
         break
     }
 
     cd $beforeCd
+}
+
+function custom-filebeat-install {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $HumioIngestToken
+    )
+
+    # Delete and stop the service if it already exists.
+    if (Get-Service filebeat -ErrorAction SilentlyContinue) {
+        $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+        $service.StopService()
+        Start-Sleep -s 1
+        $service.delete()
+    }
+
+    $workdir = Split-Path $MyInvocation.MyCommand.Path
+    $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
+    Write-Host "Elastic setting is $elasticToken"
+    # Create the new service.
+    New-Service -name filebeat `
+    -displayName Filebeat `
+    -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"$elasticToken`""
+
+    # Attempt to set the service to delayed start using sc config.
+    Try {
+        Start-Process -FilePath sc.exe -ArgumentList 'config filebeat start=delayed-auto'
+    }
+    Catch { 
+        Write-Host "An error occured setting the service to delayed start." -ForegroundColor Red 
+    }
+
 }
