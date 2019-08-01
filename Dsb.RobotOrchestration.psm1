@@ -200,9 +200,12 @@ function Install-Filebeat {
         Write-Log -LogPath $fullLogPath -Message "Attempting to install Filebeats" -Severity 'Info'
 
         Write-Host "Humio Token is $HumioIngestToken"
+        Write-Log -LogPath $fullLogPath -Message "Humio Token is $HumioIngestToken" -Severity 'Info'
         Try {
+            Write-Host "Running custom filebeat installation function"
+            Write-Log -LogPath $fullLogPath -Message "Running custom filebeat installation function" -Severity 'Info'
             cd 'C:\Program Files\Filebeat'
-            custom-filebeat-install -HumioIngestToken '$HumioIngestToken' -ErrorAction Stop 
+            Install-CustomFilebeats -HumioIngestToken '$HumioIngestToken' -ErrorAction Stop 
         }
         Catch {
             cd $beforeCd
@@ -262,7 +265,7 @@ function Install-Filebeat {
     cd $beforeCd
 }
 
-function custom-filebeat-install {
+function Install-CustomFilebeats {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -292,5 +295,4 @@ function custom-filebeat-install {
     Catch { 
         Write-Host "An error occured setting the service to delayed start." -ForegroundColor Red 
     }
-
 }
