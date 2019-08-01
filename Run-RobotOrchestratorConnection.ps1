@@ -11,6 +11,9 @@
         [string] $OrchestratorUrl,
 
         [Parameter(Mandatory = $true)]
+        [string] $OrchestratorTenant,
+
+        [Parameter(Mandatory = $true)]
         [string] $HumioIngestToken
     )
 
@@ -90,8 +93,8 @@ function Main {
         Write-Host "Connect Robot Orchestrator starts"
         Write-Log -LogPath $LogFile -Message "Connect Robot Orchestrator starts" -Severity "Info"
 
-        Write-Host "Tenant is $tenant"
-        Write-Log -LogPath $LogFile -Message "Tenant is $tenant" -Severity "Info"
+        Write-Host "Tenant is $OrchestratorTenant"
+        Write-Log -LogPath $LogFile -Message "Tenant is $OrchestratorTenant" -Severity "Info"
         
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
@@ -124,10 +127,10 @@ function Main {
             $repeat = (New-TimeSpan -Minutes 5)
             $trigger = New-JobTrigger -Once -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat
             $invokeScriptContent = {   
-                param($scriptPath, $logPath, $logName, $orchestratorUrl, $robotKey)
-                & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -RobotKey $robotKey
+                param($scriptPath, $logPath, $logName, $orchestratorUrl, $orchestratorTenant, $robotKey)
+                & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorTenant $orchestratorTenant -RobotKey $robotKey
             }
-            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$RobotKey -Trigger $trigger
+            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger
         }
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
@@ -143,6 +146,7 @@ function Main {
             Write-Host "Running the connection job failed, reason: $failureReason"
             Write-Log -LogPath $LogFile -Message "Running the connection job failed, reason: $failureReason" -Severity "Error"
             Throw "Running the connection job failed, reason: $runJob.ChildJobs[0].JobStateInfo.Reason"
+            Break
         }
 
         Write-Host "Creating scheduled job did not throw error."

@@ -9,7 +9,10 @@ Param (
     [string] $RobotKey,
 
     [Parameter(Mandatory = $true)]
-    [string] $OrchestratorUrl
+    [string] $OrchestratorUrl,
+
+    [Parameter(Mandatory = $true)]
+    [string] $OrchestratorTenant
 )
 
 $p = [Environment]::GetEnvironmentVariable("PSModulePath")
