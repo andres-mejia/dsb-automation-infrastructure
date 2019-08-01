@@ -107,25 +107,50 @@ function Main {
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
-        Write-Host "Trying to run robot connection script"
-        Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
+        Write-Host "Attempting to schedule robot connection script located at: $connectRoboDownload"
+        Write-Log -LogPath $LogFile -Message "Attempting to schedule robot connection script located at: $connectRoboDownload" -Severity "Info"        
+        $jobName = 'ConnectUiPathRobotOrchestrator'
+
         Try {
-            # Register-ScheduledJob -Name 'ConnectRobotOrchestrator' -FilePath $connectRoboDownload -Trigger (New-JobTrigger -Once -At (Get-Date -Hour 0 -Minute 00 -Second 00) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue))
-            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -OrchestratorUrl $OrchestratorUrl -ErrorAction Stop
+            $cmdArgList = @{
+                "-LogPath" = $sLogPath;
+                "-LogName" = $scheduledTaskScript;
+                "-OrchestratorUrl" = $OrchestratorUrl;
+                "-RobotKey" = "$RobotKey";
+            }
+            Write-Host "Command argument list is: $cmdArgList"
+            $repeat = (New-TimeSpan -Minutes 5)
+            $trigger = New-JobTrigger -Once -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat
+            $invokeScriptContent = {   
+                param($scriptPath, $logPath, $logName, $orchestratorUrl, $robotKey)
+                & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -RobotKey $robotKey
+            }
+            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$RobotKey -Trigger $trigger
         }
         Catch {
-            Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
+            Write-Host "Scheduling the connection job failed, reason: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
             Break
         }
+        
+        $retrievedScheduledJob = Get-ScheduledJob $jobName
+        $runJob = $retrievedScheduledJob.Run()
+        If ($runJob.ChildJobs[0].JobStateInfo.State -eq "Failed") {
+            $failureReason = $runJob.ChildJobs[0].JobStateInfo.Reason.ToString()
+            Write-Host "Running the connection job failed, reason: $failureReason"
+            Write-Log -LogPath $LogFile -Message "Running the connection job failed, reason: $failureReason" -Severity "Error"
+            Throw "Running the connection job failed, reason: $runJob.ChildJobs[0].JobStateInfo.Reason"
+        }
+
+        Write-Host "Creating scheduled job did not throw error."
+        Write-Log -LogPath $LogFile -Message "Creating scheduled job did not throw error." -Severity "Info"
 
         End {
-            If($?){
-                Write-Host "Completed Successfully."
-                Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity "Info"
-                Write-Host "Script is ending now."
-            }
+            Write-Host "$MyInvocation.MyCommand.Name finished without throwing error"
+            Write-Log -LogPath $LogFile -Message "$MyInvocation.MyCommand.Name finished without throwing error" -Severity "Info"
+            Write-Host "$MyInvocation.MyCommand.Name is exiting"
+            Write-Log -LogPath $LogFile -Message "$MyInvocation.MyCommand.Name is exiting" -Severity "Info"        
         }
     }
 }
