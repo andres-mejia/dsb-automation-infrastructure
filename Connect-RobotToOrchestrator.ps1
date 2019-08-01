@@ -58,24 +58,25 @@ Try {
 
     $service = Get-Service -DisplayName 'UiPath Robot*'
     If ($service.Status -eq "Running") {
-        Write-Log -LogPath $fullLogPath -Message "Robot service was running. Stopping it now" -Severity 'Info'
-        Write-Host "Robot service was running. Stopping it now"
-        $service | Stop-Service
+        Write-Log -LogPath $fullLogPath -Message "Robot service was running." -Severity 'Info'
+        Write-Host "Robot service was running."
+    } Else {
+        Start-Process -filepath $robotExePath -verb runas
+        $waitForRobotSVC = waitForService "UiPath Robot*" "Running"
     }
-
-    Start-Process -filepath $robotExePath -verb runas
-    $waitForRobotSVC = waitForService "UiPath Robot*" "Running"
 
     # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
     Write-Log -LogPath $fullLogPath -Message "Running robot.exe connection command" -Severity 'Info'
     Write-Host "Running robot.exe connection command"
-    Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect"
+    Start-Process -FilePath $robotExePath -Wait -Verb runAs -ArgumentList "--disconnect" -WindowStyle Hidden
     $cmdArgList = @(
         "--connect",
         "-url", "$OrchestratorUrl",
         "-key", "$RobotKey"
     )
     Try  {
+        Write-Log -LogPath $fullLogPath -Message "Attempting robot connect command" -Severity 'Info'
+        Write-Host "Attempting robot connect command"
         $connectOutput = cmd /c $robotExePath $cmdArgList '2>&1'
         Write-Host "Connect robot output is: $connectOutput"
         Write-Log -LogPath $fullLogPath -Message "Connect robot output is: $connectOutput" -Severity 'Info'
