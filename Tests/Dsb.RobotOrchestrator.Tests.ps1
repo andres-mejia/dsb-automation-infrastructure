@@ -142,7 +142,7 @@ Describe 'Get-Filebeat' {
     }
 }
 
-Describe 'Install-Filebeat setup' {
+Describe 'Install-Filebeat setup' { 
     BeforeEach {
         $downloadPath = "C:/fake/installpath"
         $programFileDir = "C:\Program Files\Filebeat"
@@ -166,7 +166,7 @@ Describe 'Install-Filebeat setup' {
         Mock -CommandName Get-FilebeatService -ModuleName $moduleName -MockWith { return $true }
         Mock -CommandName Test-Path -ParameterFilter { $Path -eq $programFileDir } -MockWith { return $false } -ModuleName $moduleName
 
-        Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion
+        Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
         Assert-MockCalled Start-Log -Exactly 1 {$LogPath -eq $logPath -and $LogName -eq $logName} -ModuleName $moduleName
     }
 
@@ -190,7 +190,7 @@ Describe 'Install-Filebeat setup' {
         Mock -CommandName Get-FilebeatService -ModuleName $moduleName -MockWith { return $true }
         Mock -CommandName Test-Path -ParameterFilter { $Path -eq $programFileDir } -MockWith { return $false } -ModuleName $moduleName
 
-        Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion
+        Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
         Assert-MockCalled Stop-FilebeatService 1 -ModuleName $moduleName
     }
     
@@ -210,7 +210,7 @@ Describe 'Install-Filebeat filebeat download' {
         $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
     }
 
-    It 'Removes any filebeat dirs in program files if they exist and service does not exist, calls Install-Filebeat' {     
+    It 'Removes any filebeat dirs in program files if they exist and service does not exist, calls Install-Filebeat' { 
         $logPath = "C:/fake/logpath"
         $logName = "fake-filebeat.log"
         $correctVersion = "7.2.0"
@@ -232,7 +232,7 @@ Describe 'Install-Filebeat filebeat download' {
         Mock -CommandName Test-Path -ParameterFilter { $Path -eq $programFileDir } -MockWith { return $true } -ModuleName $moduleName
         Mock -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $programFileDir }
         
-        Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion
+        Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
         Assert-MockCalled Remove-Item -Exactly 1 { $Path -eq  $unzippedFile } -ModuleName $moduleName
         Assert-MockCalled Remove-Item -Exactly 1 { $Path -eq  $programFileDir } -ModuleName $moduleName
         Assert-MockCalled Get-FilebeatZip 1 { $FullLogPath -eq (Join-Path -Path $logPath -ChildPath $logName) }  -ModuleName $moduleName

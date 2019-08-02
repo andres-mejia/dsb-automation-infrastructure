@@ -165,7 +165,7 @@ function Get-FilebeatConfig {
 }
 
 function Confirm-FilebeatServiceRunning {
-    
+
 }
 
 function Install-Filebeat {
@@ -183,7 +183,10 @@ function Install-Filebeat {
 
         [Parameter(Mandatory=$true)]
         [ValidateSet("7.2.0")]
-        [string] $FilebeatVersion
+        [string] $FilebeatVersion,
+
+        [Parameter(Mandatory=$true)]
+        [string] $HumioIngestToken
     )
 
     Start-Log -LogPath $LogPath -LogName $LogName
@@ -279,7 +282,6 @@ function Install-Filebeat {
         Start-Service filebeat -ErrorAction Stop
     }
     Catch {
-        cd $beforeCd
         Write-Host "There was an exception starting the Filebeat service: $_.Exception"
         Write-Log -LogPath $FullLogPath -Message "There was an exception starting the Filebeat service: $_.Exception" -Severity 'Error'
         throw "There was an exception starting the Filebeat service: $_.Exception"
@@ -299,7 +301,6 @@ function Install-Filebeat {
         throw "Filebeat service is not running correctly"
         break
     }
-    cd $beforeCd
 }
 
 function Install-CustomFilebeat {
