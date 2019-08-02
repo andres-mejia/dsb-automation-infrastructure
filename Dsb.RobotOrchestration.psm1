@@ -122,8 +122,9 @@ function Download-Filebeat {
 
     Write-Host "Expanding archive $downloadedZip"
     Write-Log -LogPath $FullLogPath -Message "Expanding archive $downloadedZip" -Severity 'Info'
+    $programFileDir = "C:\Program Files"
     Try {
-        Expand-Archive -Path $downloadedZip -DestinationPath 'C:\Program Files' -Force
+        Expand-Archive -Path $downloadedZip -DestinationPath $programFileDir -Force
     }
     Catch {
         Write-Host "There was an error unzipping Filebeat: $_.Exception"
@@ -146,6 +147,12 @@ function Download-Filebeat {
         Write-Log -LogPath $FullLogPath -Message $_.Exception -Severity 'Error'
         throw "There was an error renaming unzipped Filebeat dir: $_.Exception"
     }
+}
+
+function Stop-FilebeatService {
+    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+    $service.StopService()
+    Start-Sleep -s 1
 }
 
 function Install-Filebeat {
@@ -175,13 +182,11 @@ function Install-Filebeat {
     $beforeCd = Get-Location
 
     # If no service, but the Filebeats folder exists in program files, it should be deleted
-    if ((Get-Service filebeat -ErrorAction SilentlyContinue)) {
+    If ((Get-Service filebeat -ErrorAction SilentlyContinue)) {
         Write-Host "Filebeat service already installed, attempting to stop service"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service already installed, attempting to stop servcie" -Severity 'Info'
         Try {
-            $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
-            $service.StopService()
-            Start-Sleep -s 1
+            Stop-FilebeatService
         }
         Catch {
             Write-Host "There was an exception stopping Filebeat service: $_.Exception"
@@ -189,13 +194,23 @@ function Install-Filebeat {
             Break
         } 
     }
-    else {
+    Else {
+        $unzippedFile = "C:\Program Files\filebeat-$FilebeatVersion-windows-x86"
+        If (Test-Path -Path $unzippedFile) {
+            Remove-Item -Path $unzippedFile
+        }
+        $programFileFilebeat = "C:\Program Files\Filebeat"
+        If (Test-Path -Path $programFileFilebeat) {
+            Remove-Item -Path  $programFileFilebeat
+        }
+
         Try {
             Download-Filebeat -FullLogPath $FullLogPath -DownloadPath $DownloadPath -FilebeatVersion $FilebeatVersion
         }
         Catch {
-            Write-Host "There was an exception stopping Filebeat service: $_.Exception"
-            Write-Log -LogPath $FullLogPath -Message $_.Exception -Severity 'Error'
+            Write-Host "There was an exception downloading Filebeat: $_.Exception"
+            Write-Log -LogPath $FullLogPath -Message "There was an exception downloading Filebeat: $_.Exception" -Severity 'Error'
+            Throw "There was an exception downloading Filebeat: $_.Exception"
             Break
         }
 
