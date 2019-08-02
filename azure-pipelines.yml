@@ -22,5 +22,8 @@ stages:
         Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
-        Invoke-Pester -PassThru  -CodeCoverage $(Build.SourcesDirectory)/Dsb.RobotOrchestration.psm1
+        $result = Invoke-Pester -PassThru -CodeCoverage $(Build.SourcesDirectory)/Dsb.RobotOrchestration.psm1
+        if ($result.failedCount -ne 0) { 
+            Write-Error "Pester returned errors"
+        }
       displayName: Run pester tests with code coverage

@@ -119,7 +119,6 @@ Describe 'Download-Filebeat' {
         Download-Filebeat -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
         Assert-MockCalled Expand-Archive -Exactly 1 { $Path -eq $fullDownloadPath -and $DestinationPath -eq 'C:\Program Files' -and $PSBoundParameters['Force'] -eq $true } -ModuleName $moduleName
     }
-    
 }
 
 Describe 'Install-Filebeat' {
