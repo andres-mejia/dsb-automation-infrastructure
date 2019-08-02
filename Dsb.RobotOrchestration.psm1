@@ -86,18 +86,18 @@ function waitForService($servicesName, $serviceStatus) {
 
 }
 
-function Download-Filebeat {
+function Get-FilebeatZip {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string] $FullLogPath,
 
         [Parameter(Mandatory=$true)]
-        [string]$DownloadPath,
+        [string] $DownloadPath,
 
         [Parameter(Mandatory=$true)]
         [ValidateSet("7.2.0")]
-        [string]$FilebeatVersion
+        [string] $FilebeatVersion
     )
     $url = "https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-oss-$FilebeatVersion-windows-x86.zip"
     Write-Host "Attempting to download Filebeat from: $url"
@@ -155,6 +155,19 @@ function Stop-FilebeatService {
     Start-Sleep -s 1
 }
 
+function Get-FilebeatService {
+    $service = Get-Service -Name filebeat -ErrorAction SilentlyContinue
+    return $service
+}
+
+function Get-FilebeatConfig {
+
+}
+
+function Confirm-FilebeatServiceRunning {
+    
+}
+
 function Install-Filebeat {
 
     [CmdletBinding()]
@@ -166,11 +179,11 @@ function Install-Filebeat {
         [string] $LogName,
 
         [Parameter(Mandatory=$true)]
-        [string]$DownloadPath,
+        [string] $DownloadPath,
 
         [Parameter(Mandatory=$true)]
         [ValidateSet("7.2.0")]
-        [string]$FilebeatVersion
+        [string] $FilebeatVersion
     )
 
     Start-Log -LogPath $LogPath -LogName $LogName
@@ -181,10 +194,9 @@ function Install-Filebeat {
 
     $beforeCd = Get-Location
 
-    # If no service, but the Filebeats folder exists in program files, it should be deleted
-    If ((Get-Service filebeat -ErrorAction SilentlyContinue)) {
+    If (Get-FilebeatService) {
         Write-Host "Filebeat service already installed, attempting to stop service"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service already installed, attempting to stop servcie" -Severity 'Info'
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service already installed, attempting to stop service" -Severity 'Info'
         Try {
             Stop-FilebeatService
         }
@@ -195,17 +207,23 @@ function Install-Filebeat {
         } 
     }
     Else {
+        Write-Host "No Filebeat service existed"
+        Write-Log -LogPath $FullLogPath -Message "No Filebeat service existed" -Severity 'Info'
         $unzippedFile = "C:\Program Files\filebeat-$FilebeatVersion-windows-x86"
         If (Test-Path -Path $unzippedFile) {
+            Write-Host "Item $unzippedFile existed, removing now"
+            Write-Log -LogPath $FullLogPath -Message "Item $unzippedFile existed, removing now" -Severity 'Error'
             Remove-Item -Path $unzippedFile
         }
         $programFileFilebeat = "C:\Program Files\Filebeat"
         If (Test-Path -Path $programFileFilebeat) {
+            Write-Host "Item $programFileFilebeat existed, removing now"
+            Write-Log -LogPath $FullLogPath -Message "Item $programFileFilebeat existed, removing now" -Severity 'Error'
             Remove-Item -Path  $programFileFilebeat
         }
 
         Try {
-            Download-Filebeat -FullLogPath $FullLogPath -DownloadPath $DownloadPath -FilebeatVersion $FilebeatVersion
+            Get-FilebeatZip -FullLogPath $FullLogPath -DownloadPath $DownloadPath -FilebeatVersion $FilebeatVersion
         }
         Catch {
             Write-Host "There was an exception downloading Filebeat: $_.Exception"
@@ -238,6 +256,7 @@ function Install-Filebeat {
     Write-Host "Retrieving filebeat config"
     Write-Log -LogPath $FullLogPath -Message "Retrieving filebeat config" -Severity 'Info'
     
+    # TODO: Should be its own function
     $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
     Remove-Item -Path $filebeatYaml -Force
     $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
@@ -267,6 +286,7 @@ function Install-Filebeat {
         break
     }
 
+    # TODO: Should be its own function
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
     if ($service.State -eq "Running") {
         Write-Host "Filebeat Service started successfully"
