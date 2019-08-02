@@ -199,18 +199,18 @@ function Install-Filebeat {
             Break
         }
 
-        cd 'C:\Program Files\Filebeat'
-
         Write-Host "Attempting to install Filebeat"
         Write-Log -LogPath $FullLogPath -Message "Attempting to install Filebeat" -Severity 'Info'
 
         Write-Host "Humio Token is $HumioIngestToken"
         Write-Log -LogPath $FullLogPath -Message "Humio Token is $HumioIngestToken" -Severity 'Info'
+        
+        cd 'C:\Program Files\Filebeat'
         Try {
             Write-Host "Running custom filebeat installation function"
             Write-Log -LogPath $FullLogPath -Message "Running custom filebeat installation function" -Severity 'Info'
-            cd 'C:\Program Files\Filebeat'
             Install-CustomFilebeat -HumioIngestToken '$HumioIngestToken' -ErrorAction Stop 
+            cd $beforeCd
         }
         Catch {
             cd $beforeCd

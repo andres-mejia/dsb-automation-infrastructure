@@ -79,6 +79,27 @@ Describe 'Download-Filebeat' {
         Assert-MockCalled Remove-Item -Exactly 1 { $Path -eq $fullDownloadPath -and $PSBoundParameters['Recurse'] -eq $true } -ModuleName $moduleName
     }
 
+    It 'Removes the original expanded zip filebeat folder if it exists' {
+        $logPath = "C:/fake/logpath"
+        $logName = "fake-filebeat.log"
+        $downloadPath = "C:\fake\download"
+        $filebeatZip = "filebeat.zip"
+        $fullDownloadPath = Join-Path -Path $downloadPath -ChildPath $filebeatZip
+        $correctVersion = "7.2.0"
+        $unzippedFile = "C:\Program Files\filebeat-$correctVersion-windows-x86"
+
+        Mock -CommandName Write-Log -ModuleName $moduleName
+        Mock -CommandName Test-Path -ParameterFilter { $Path -eq $fullDownloadPath } -MockWith { return $true } -ModuleName $moduleName
+        Mock -CommandName Remove-Item -ModuleName $moduleName
+        Mock -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -CommandName Expand-Archive -ModuleName $moduleName
+        Mock -CommandName Rename-Item -ModuleName $moduleName
+        Mock -CommandName Test-Path -ParameterFilter { $Path -eq $unzippedFile } -MockWith { return $true } -ModuleName $moduleName
+
+        Download-Filebeat -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
+        Assert-MockCalled Remove-Item -Exactly 1 { $Path -eq $unzippedFile -and $PSBoundParameters['Recurse'] -eq $true -and $PSBoundParameters['Force'] -eq $true } -ModuleName $moduleName
+    }
+
     It 'Correctly makes the invoke-webrequest request' {
         $logPath = "C:/fake/logpath"
         $logName = "fake-filebeat.log"
@@ -122,7 +143,7 @@ Describe 'Download-Filebeat' {
 }
 
 Describe 'Install-Filebeat' {
-    It 'It starts a calls Start-Log' {
+    It 'It calls Start-Log' {
         $logPath = "C:/fake/logpath"
         $logName = "fake-filebeat.log"
         $downloadPath = "C:/fake/installpath"
@@ -134,6 +155,7 @@ Describe 'Install-Filebeat' {
         Mock -CommandName Get-Service -ModuleName $moduleName -MockWith { return $false }
         Mock -CommandName Get-WmiObject -ModuleName $moduleName { return @{State = "Running"}}
         Mock -CommandName Test-Path -ParameterFilter { $Path -eq "$downloadPath\filebeat.zip" } -MockWith { return $false } -ModuleName $moduleName
+        Mock -CommandName cd -ModuleName $moduleName
         Mock -CommandName Download-Filebeat -ModuleName $moduleName
         Mock -CommandName Install-CustomFilebeat -ModuleName $moduleName
         Mock -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
