@@ -108,8 +108,9 @@ function Main {
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
+            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
             Throw 'There was a problem installing Filebeats'
+            break
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
