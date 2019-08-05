@@ -110,20 +110,17 @@ function Get-FilebeatZip {
     }
     Write-Host "Attempting to download filebeat to: $downloadedZip"
     Write-Log -LogPath $FullLogPath -Message "Attempting to download filebeat to: $downloadedZip" -Severity 'Info'
-    Try {
-        Invoke-WebRequest -Uri $url -OutFile $downloadedZip
-    }
-    Catch {
-        Write-Host "There was an error downloading Filebeat: $_.Exception"
-        Write-Log -LogPath $FullLogPath -Message "There was an error downloading Filebeat: $_.Exception" -Severity 'Error'
-        Throw "There was an error downloading Filebeat: $_.Exception"
-    }
+    
+    Invoke-WebRequest -Uri $url -OutFile $downloadedZip
 
     Write-Host "Expanding archive $downloadedZip"
     Write-Log -LogPath $FullLogPath -Message "Expanding archive $downloadedZip" -Severity 'Info'
     $programFileDir = "C:\Program Files"
     Try {
-        Expand-Archive -Path $downloadedZip -DestinationPath $programFileDir -Force
+        Rename-Item -Path $downloadedZip -NewName 'Filebeat' -Force -ErrorAction Stop
+        $newFilebeat = Join-Path -Path $DownloadPath -ChildPath 'Filebeat'
+        Write-Host "path is: $newFilebeat, destination is: $programFileDir"
+        Expand-Archive -Path $newFilebeat -DestinationPath $programFileDir -Force
     }
     Catch {
         Write-Host "There was an error unzipping Filebeat: $_.Exception"
@@ -131,21 +128,6 @@ function Get-FilebeatZip {
         Throw "There was an error downloading Filebeat: $_.Exception"
     }
 
-    $unzippedFile = "C:\Program Files\filebeat-$FilebeatVersion-windows-x86"
-    Write-Host "Renaming $unzippedFile to Filebeat"
-    Write-Log -LogPath $FullLogPath -Message "Renaming $unzippedFile to Filebeat" -Severity 'Info'
-    
-    Try {
-        Rename-Item -Path $unzippedFile -NewName 'Filebeat' -Force -ErrorAction Stop
-        If (Test-Path -Path $unzippedFile) {
-            Remove-Item $unzippedFile -Recurse -Force -ErrorAction Stop
-        }
-    }
-    Catch {
-        Write-Host "There was an error renaming unzipped Filebeat dir: $_.Exception"
-        Write-Log -LogPath $FullLogPath -Message $_.Exception -Severity 'Error'
-        throw "There was an error renaming unzipped Filebeat dir: $_.Exception"
-    }
 }
 
 function Stop-FilebeatService {
@@ -170,8 +152,8 @@ function Get-FilebeatConfig {
     Write-Host "Removing existing filebeat config from: $filebeatYaml"
     Write-Log -LogPath $FullLogPath -Message "Removing existing filebeat config from: $filebeatYaml" -Severity 'Info'
     Remove-Item -Path $filebeatYaml -Force
-    
-    $configUri = "https://raw.githubusercontent.com/nkuik/ion-infrastructure/master/filebeat.yml"
+
+    $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
     Write-Host "Attempting to download filbeat config from: $configUri"
     Write-Log -LogPath $FullLogPath -Message "Attempting to download filbeat config from: $configUri" -Severity 'Info'
     Invoke-WebRequest -Uri $configUri -OutFile $filebeatYaml
@@ -214,13 +196,13 @@ function Remove-OldFilebeatFolders {
     If (Test-Path -Path $unzippedFile) {
         Write-Host "Item $unzippedFile existed, removing now"
         Write-Log -LogPath $FullLogPath -Message "Item $unzippedFile existed, removing now" -Severity 'Error'
-        Remove-Item -Path $unzippedFile -Force
+        Remove-Item -Path $unzippedFile -Recurse -Force
     }
     $programFileFilebeat = "C:\Program Files\Filebeat"
     If (Test-Path -Path $programFileFilebeat) {
         Write-Host "Item $programFileFilebeat existed, removing now"
         Write-Log -LogPath $FullLogPath -Message "Item $programFileFilebeat existed, removing now" -Severity 'Error'
-        Remove-Item -Path $programFileFilebeat -Force
+        Remove-Item -Path $programFileFilebeat -Recurse -Force
     }
 }
 
