@@ -55,11 +55,11 @@ function Main {
             New-Item -ItemType Directory -Path $connectRoboPath
         }
 
-        # $wc = New-Object System.Net.WebClient
-        # $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
-        # Write-Host "Attempting to download file from from: $orchModule"
-        # $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
-        # $wc.DownloadFile($orchModule, $orchModuleDownload)     
+        $wc = New-Object System.Net.WebClient
+        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
+        Write-Host "Attempting to download file from from: $orchModule"
+        $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
+        $wc.DownloadFile($orchModule, $orchModuleDownload)     
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"

@@ -55,7 +55,7 @@ function Write-Log
     )
 
     $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    $logString = "$now $Severity message='$Message' env=$Environment timeStamp=$now level=$Severity pcName=$env:computername"
+    $logString = "$now $Severity message='$Message' env='Dev' timeStamp=$now level=$Severity pcName=$env:computername"
     Try {
         Add-Content -Path $LogPath -Value $logString -Force
     }
