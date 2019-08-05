@@ -203,11 +203,6 @@ Describe 'Get-Filebeat' {
 Describe 'Install-Filebeat logging' {
 
     It 'It calls Start-Log' {
-        If (Get-Module $moduleName) {
-            Remove-Module $moduleName
-        } 
-        Import-Module "$parentDirectory\$moduleName.psm1"
-
         $downloadPath = "C:/fake/installpath"
         $programFileDir = "C:\Program Files\Filebeat"
         $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
