@@ -55,11 +55,11 @@ function Main {
             New-Item -ItemType Directory -Path $connectRoboPath
         }
 
-        $wc = New-Object System.Net.WebClient
-        $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
-        Write-Host "Attempting to download file from from: $orchModule"
-        $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
-        $wc.DownloadFile($orchModule, $orchModuleDownload)     
+        # $wc = New-Object System.Net.WebClient
+        # $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
+        # Write-Host "Attempting to download file from from: $orchModule"
+        # $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
+        # $wc.DownloadFile($orchModule, $orchModuleDownload)     
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"
@@ -69,6 +69,10 @@ function Main {
         $p = [Environment]::GetEnvironmentVariable("PSModulePath")
         $p += ";C:\Program Files\WindowsPowerShell\Modules\"
         [Environment]::SetEnvironmentVariable("PSModulePath", $p)
+        
+        If (Get-Module Dsb.RobotOrchestration) {
+            Remove-Module Dsb.RobotOrchestration
+        } 
         
         Import-Module Dsb.RobotOrchestration
 
@@ -100,7 +104,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
 
         Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -InstallationPath $script:tempDirectory -FilebeatVersion 7.2.0
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
