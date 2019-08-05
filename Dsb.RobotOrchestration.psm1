@@ -165,7 +165,23 @@ function Get-FilebeatConfig {
 }
 
 function Confirm-FilebeatServiceRunning {
-
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $FullLogPath
+    )
+    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+    if ($service.State -eq "Running") {
+        Write-Host "Filebeat Service started successfully"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat Service started successfully" -Severity 'Info'
+    }
+    else {
+        Write-Host "Filebeat service is not running correctly"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity 'Error'
+        cd $beforeCd
+        throw "Filebeat service is not running correctly"
+        break
+    }
 }
 
 function Install-Filebeat {
@@ -288,19 +304,7 @@ function Install-Filebeat {
         break
     }
 
-    # TODO: Should be its own function
-    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
-    if ($service.State -eq "Running") {
-        Write-Host "Filebeat Service started successfully"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat Service started successfully" -Severity 'Info'
-    }
-    else {
-        Write-Host "Filebeat service is not running correctly"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity 'Error'
-        cd $beforeCd
-        throw "Filebeat service is not running correctly"
-        break
-    }
+    Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath
 }
 
 function Install-CustomFilebeat {
