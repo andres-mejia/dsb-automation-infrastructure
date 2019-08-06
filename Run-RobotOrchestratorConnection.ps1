@@ -129,13 +129,19 @@ function Main {
         }
 
         Try {
+            Write-Host "Trying to run robot connection before scheduling as a job"
+            Write-Log -LogPath $LogFile -Message "Trying to run robot connection before scheduling as a job" -Severity "Info"
+            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -Environment $Environment -ErrorAction Stop
+
+            Write-Host "Trying to register robot connection as a scheduled job"
+            Write-Log -LogPath $LogFile -Message "Trying to register robot connection as a scheduled job" -Severity "Info"
             $repeat = (New-TimeSpan -Minutes 5)
             $trigger = New-JobTrigger -Once -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat
             $invokeScriptContent = {   
                 param($scriptPath, $logPath, $logName, $orchestratorUrl, $orchestratorTenant, $robotKey)
                 & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorTenant $orchestratorTenant -RobotKey $robotKey
             }
-            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger
+            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger -ErrorAction Stop
         }
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
