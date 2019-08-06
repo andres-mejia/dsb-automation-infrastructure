@@ -55,10 +55,10 @@ function Main {
             New-Item -ItemType Directory -Path $connectRoboPath
         }
 
-        $wc = New-Object System.Net.WebClient
         $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
         Write-Host "Attempting to download file from from: $orchModule"
         $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
+        $wc = New-Object System.Net.WebClient
         $wc.DownloadFile($orchModule, $orchModuleDownload)     
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
@@ -143,8 +143,18 @@ function Main {
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
             Break
         }
-        
+
+        Write-Host "Attempting to retrieve the scheduled job just created."
+        Write-Log -LogPath $LogFile -Message "Attempting to retrieve the scheduled job just created." -Severity "Info"
         $retrievedScheduledJob = Get-ScheduledJob $jobName
+
+        If ($retrievedScheduledJob -eq $null) {
+            Write-Host "Retrieving the scheduled job returned null"
+            Write-Log -LogPath $LogFile -Message "Retrieving the scheduled job returned null" -Severity "Error"
+            Throw "Scheduled orchestrator connection job did not exist"
+            Break
+        }
+
         $runJob = $retrievedScheduledJob.Run()
         If ($runJob.ChildJobs[0].JobStateInfo.State -eq "Failed") {
             $failureReason = $runJob.ChildJobs[0].JobStateInfo.Reason.ToString()

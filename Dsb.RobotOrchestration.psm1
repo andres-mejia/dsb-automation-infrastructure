@@ -63,8 +63,30 @@ function Write-Log
         Write-Host "There was an error writing a log to $LogPath"
         Throw "There was an error creating {$LogPath}: $_.Exception"
     }
-
 }
+
+function Download-File {
+
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$FullLogPath,
+
+        [Parameter(Mandatory=$true)]
+        [string] $Url,
+
+        [Parameter(Mandatory=$true)]
+        [string] $OutPath
+    )
+
+    Write-Host "Attempting to download: $Url, to: $OutPath"
+    Write-Log -LogPath $FullLogPath -Message "Attempting to download: $Url, to: $OutPath" -Severity "Info"
+
+    $client = New-Object System.Net.WebClient
+    $client.DownloadFile($Url, $OutPath)
+
+}    
+
 
 function Wait-ForService($servicesName, $serviceStatus) {
   # Get all services where DisplayName matches $serviceName and loop through each of them.
@@ -111,15 +133,16 @@ function Get-FilebeatZip {
     Write-Host "Attempting to download filebeat to: $downloadedZip"
     Write-Log -LogPath $FullLogPath -Message "Attempting to download filebeat to: $downloadedZip" -Severity "Info"
     
-    Invoke-WebRequest -Uri $url -OutFile $downloadedZip
+    Download-File -FullLogPath $FullLogPath -Url $url -OutPath $downloadedZip
 
     Write-Host "Expanding archive $downloadedZip"
     Write-Log -LogPath $FullLogPath -Message "Expanding archive $downloadedZip" -Severity "Info"
+    
     $programFileDir = "C:\Program Files"
-    Rename-Item -Path $downloadedZip -NewName 'Filebeat' -Force -ErrorAction Stop
-    $newFilebeat = Join-Path -Path $DownloadPath -ChildPath 'Filebeat'
-    Write-Host "path is: $newFilebeat, destination is: $programFileDir"
-    Expand-Archive -Path $newFilebeat -DestinationPath $programFileDir -Force
+    Expand-Archive -Path $downloadedZip -DestinationPath $programFileDir -Force
+
+    $expandedFilebeat = Join-Path -Path $programFileDir -ChildPath "filebeat-$FilebeatVersion-windows-x86"
+    Rename-Item -Path $expandedFilebeat -NewName 'Filebeat' -Force -ErrorAction Stop
 }
 
 function Stop-FilebeatService {
@@ -146,9 +169,10 @@ function Get-FilebeatConfig {
     Remove-Item -Path $filebeatYaml -Force
 
     $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
-    Write-Host "Attempting to download filbeat config from: $configUri"
-    Write-Log -LogPath $FullLogPath -Message "Attempting to download filbeat config from: $configUri" -Severity "Info"
-    Invoke-WebRequest -Uri $configUri -OutFile $filebeatYaml
+    Write-Host "Attempting to download filebeat config from: $configUri"
+    Write-Log -LogPath $FullLogPath -Message "Attempting to download filebeat config from: $configUri" -Severity "Info"
+    
+    Download-File -FullLogPath $FullLogPath -Url $configUri -OutPath $filebeatYaml
     if (-not (Test-Path -Path $filebeatYaml)) {
         throw [System.IO.FileNotFoundException] "$filebeatYaml not found."
     }
@@ -187,13 +211,13 @@ function Remove-OldFilebeatFolders {
     $unzippedFile = "C:\Program Files\filebeat-$FilebeatVersion-windows-x86"
     If (Test-Path -Path $unzippedFile) {
         Write-Host "Item $unzippedFile existed, removing now"
-        Write-Log -LogPath $FullLogPath -Message "Item $unzippedFile existed, removing now" -Severity "Error"
+        Write-Log -LogPath $FullLogPath -Message "Item $unzippedFile existed, removing now" -Severity "Info"
         Remove-Item -Path $unzippedFile -Recurse -Force
     }
     $programFileFilebeat = "C:\Program Files\Filebeat"
     If (Test-Path -Path $programFileFilebeat) {
         Write-Host "Item $programFileFilebeat existed, removing now"
-        Write-Log -LogPath $FullLogPath -Message "Item $programFileFilebeat existed, removing now" -Severity "Error"
+        Write-Log -LogPath $FullLogPath -Message "Item $programFileFilebeat existed, removing now" -Severity "Info"
         Remove-Item -Path $programFileFilebeat -Recurse -Force
     }
 }
@@ -286,11 +310,12 @@ function Install-Filebeat {
         Write-Host "Humio Token is $HumioIngestToken"
         Write-Log -LogPath $FullLogPath -Message "Humio Token is $HumioIngestToken" -Severity "Info"
         
-        cd 'C:\Program Files\Filebeat'
+        $filebeatLocation = 'C:\Program Files\Filebeat'
+        cd $filebeatLocation
         Try {
             Write-Host "Running custom filebeat installation function"
             Write-Log -LogPath $FullLogPath -Message "Running custom filebeat installation function" -Severity "Info"
-            Install-CustomFilebeat -HumioIngestToken '$HumioIngestToken' -ErrorAction Stop 
+            Install-CustomFilebeat -HumioIngestToken "$HumioIngestToken" -FullLogPath $FullLogPath -FilebeatLocation $FilebeatLocation -ErrorAction Stop 
             cd $beforeCd
         }
         Catch {
@@ -349,24 +374,35 @@ function Install-CustomFilebeat {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string] $HumioIngestToken
+        [string] $HumioIngestToken,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FullLogPath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FilebeatLocation
     )
 
     # Delete and stop the service if it already exists.
+    Write-Host "Checking for existing Filebeat service again."
+    Write-Log -LogPath $FullLogPath -Message "Checking for existing Filebeat service again." -Severity "Info"
+
     if (Get-Service filebeat -ErrorAction SilentlyContinue) {
+        Write-Host "Filebeat service existed"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service existed" -Severity "Info"
         $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
         $service.StopService()
         Start-Sleep -s 1
         $service.delete()
     }
 
-    $workdir = Split-Path $MyInvocation.MyCommand.Path
+    Write-Host "Trying to get workdir"
     $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
     Write-Host "Elastic setting is $elasticToken"
     # Create the new service.
     New-Service -name filebeat `
     -displayName Filebeat `
-    -binaryPathName "`"$workdir\filebeat.exe`" -c `"$workdir\filebeat.yml`" -path.home `"$workdir`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"$elasticToken`""
+    -binaryPathName "`"$FilebeatLocation\filebeat.exe`" -c `"$FilebeatLocation\filebeat.yml`" -path.home `"$FilebeatLocation`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"$elasticToken`""
 
     # Attempt to set the service to delayed start using sc config.
     Try {

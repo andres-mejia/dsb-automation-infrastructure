@@ -56,10 +56,8 @@ Describe 'Remove-OldFilebeatFolders' {
         $programFileFilebeat = "C:\Program Files\Filebeat"
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
-        
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $unzippedFile } -MockWith { return $true } -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $unzippedFile -and $PSBoundParameters['Force'] -eq $true }
-        
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $programFileFilebeat } -MockWith { return $true } -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $programFileFilebeat -and $PSBoundParameters['Force'] -eq $true }
 
@@ -76,24 +74,24 @@ Describe 'Get-FilebeatConfig' {
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
         Mock -Verifiable -CommandName Test-Path -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml } -MockWith { return $true }
 
         Get-FilebeatConfig -FullLogPath 'fakelog\path'
         Assert-MockCalled Remove-Item -Exactly 1 { $Path -eq  $filebeatYaml -and $PSBoundParameters['Force'] -eq $true } -ModuleName $moduleName
     }
 
-    It 'Calls invoke-webrequest with the correct params' {
+    It 'Calls download-file with the correct params' {
         $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
         $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName -ParameterFilter  { $Uri -eq $configUri -and $OutFile -eq $filebeatYaml }
         Mock -Verifiable -CommandName Test-Path -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml } -MockWith { return $true }
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName 
 
         Get-FilebeatConfig -FullLogPath 'fakelog\path'
-        Assert-MockCalled Invoke-WebRequest 1 { $Uri -eq $configUri -and $OutFile -eq $filebeatYaml } -ModuleName $moduleName
+        Assert-MockCalled Download-File 1 { $Url -eq $configUri -and $OutPath -eq $filebeatYaml -and $FullLogPath -eq 'fakelog\path' } -ModuleName $moduleName
     }
 
     It 'Throws error if yaml file not found' {
@@ -101,7 +99,7 @@ Describe 'Get-FilebeatConfig' {
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
         Mock -Verifiable -CommandName Test-Path -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml } -MockWith { return $false }
 
        { Get-FilebeatConfig -FullLogPath 'fakelog\path' } | Should -Throw
@@ -129,10 +127,9 @@ Describe 'Get-Filebeat' {
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $fullDownloadPath } -MockWith { return $true } -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName 
         Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
         Mock -Verifiable -CommandName Rename-Item -ModuleName $moduleName
-        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $unzippedFile } -MockWith { return $false } -ModuleName $moduleName
 
         Get-FilebeatZip -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
         Assert-MockCalled Remove-Item -Exactly 1 { $Path -eq $fullDownloadPath -and $PSBoundParameters['Recurse'] -eq $true } -ModuleName $moduleName
@@ -149,17 +146,17 @@ Describe 'Get-Filebeat' {
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $fullDownloadPath } -ModuleName $moduleName
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
         Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
         Mock -Verifiable -CommandName Rename-Item -ModuleName $moduleName
 
         Get-FilebeatZip -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
-        Assert-MockCalled Rename-Item 1 { $Path -eq $fullDownloadPath -and $NewName -eq 'Filebeat' } -ModuleName $moduleName
+        Assert-MockCalled Rename-Item 1 { $Path -eq $unzippedFile -and $NewName -eq 'Filebeat' } -ModuleName $moduleName
     }
 
-    It 'Correctly makes the invoke-webrequest request' {
+    It 'Correctly makes the download-file request' {
         $logPath = "C:/fake/logpath"
         $logName = "fake-filebeat.log"
+        $fullLogPath = Join-Path -Path $logPath -ChildPath -$logName
         $downloadPath = "C:\fake\invokeweb"
         $filebeatZip = "filebeat.zip"
         $fullDownloadPath = Join-Path -Path $downloadPath -ChildPath $filebeatZip
@@ -168,14 +165,13 @@ Describe 'Get-Filebeat' {
         $unzippedFile = "C:\Program Files\filebeat-$correctVersion-windows-x86"
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
-        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $downloadLocation } -MockWith { return $false } -ModuleName $moduleName
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $fullDownloadPath } -MockWith { return $false } -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
         Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
         Mock -Verifiable -CommandName Rename-Item -ModuleName $moduleName
-        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $unzippedFile } -MockWith { return $false } -ModuleName $moduleName
 
-        Get-FilebeatZip -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
-        Assert-MockCalled Invoke-WebRequest -Exactly 1 { $Uri -eq $url -and $OutFile -eq $fullDownloadPath }  -ModuleName $moduleName
+        Get-FilebeatZip -FullLogPath $fullLogPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
+        Assert-MockCalled Download-File -Exactly 1 { $Url -eq $url -and $OutPath -eq $fullDownloadPath -and $FullLogPath -eq $fullLogPath }  -ModuleName $moduleName
     }
 
     It 'Correctly makes the expand-archive request' {
@@ -188,15 +184,34 @@ Describe 'Get-Filebeat' {
         $correctVersion = "7.2.0"
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
-        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $downloadLocation } -MockWith { return $true } -ModuleName $moduleName
-        Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $fullDownloadPath } -MockWith { return $false } -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
         Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
         Mock -Verifiable -CommandName Rename-Item -ModuleName $moduleName
-        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $unzippedFile } -MockWith { return $false } -ModuleName $moduleName
 
         Get-FilebeatZip -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
-        Assert-MockCalled Expand-Archive -Exactly 1 { $Path -eq $newPath -and $DestinationPath -eq 'C:\Program Files' -and $PSBoundParameters['Force'] -eq $true } -ModuleName $moduleName
+        Assert-MockCalled Expand-Archive -Exactly 1 { $Path -eq $fullDownloadPath -and $DestinationPath -eq 'C:\Program Files' -and $PSBoundParameters['Force'] -eq $true } -ModuleName $moduleName
+    }
+
+    It 'Renames the expanded filebeat zip' {
+        $logPath = "C:/fake/logpath"
+        $logName = "fake-filebeat.log"
+        $downloadPath = "C:\fake\expandarchive"
+        $filebeatZip = "filebeat.zip"
+        $fullDownloadPath = Join-Path -Path $downloadPath -ChildPath $filebeatZip
+        $newPath = Join-Path -Path $downloadPath -ChildPath 'Filebeat'
+        $correctVersion = "7.2.0"
+        $unzippedFile = "C:\Program Files\filebeat-$correctVersion-windows-x86"
+
+
+        Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+        Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $fullDownloadPath } -MockWith { return $false } -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
+        Mock -Verifiable -CommandName Expand-Archive -ModuleName $moduleName
+        Mock -Verifiable -CommandName Rename-Item -ModuleName $moduleName
+
+        Get-FilebeatZip -FullLogPath $logPath -DownloadPath $downloadPath -FilebeatVersion $correctVersion
+        Assert-MockCalled Rename-Item 1 -ModuleName $moduleName { $Path -eq $unzippedFile -and $NewName -eq 'Filebeat' }
     }
 }
 
@@ -240,8 +255,6 @@ Describe 'Install-Filebeat setup' {
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
         Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
         Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
         Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName
