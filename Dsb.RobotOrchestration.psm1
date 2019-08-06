@@ -189,12 +189,12 @@ function Confirm-FilebeatServiceRunning {
     if ($service.State -eq "Running") {
         Write-Host "Filebeat Service started successfully"
         Write-Log -LogPath $FullLogPath -Message "Filebeat Service started successfully" -Severity "Info"
+        return $true
     }
     else {
         Write-Host "Filebeat service is not running correctly"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity "Error"
-        throw "Filebeat service is not running correctly"
-        break
+        return $false
     }
 }
 
@@ -342,28 +342,48 @@ function Install-Filebeat {
         break
     }
 
-    Write-Host "Attempting to start filebeat service"
-    Write-Log -LogPath $FullLogPath -Message "Attempting to start filebeat service" -Severity "Info"
-    Try {
-        Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
-    }
-    Catch {
-        Write-Host "There was an exception starting the filebeat service: $_.Exception"
-        Write-Log -LogPath $FullLogPath -Message "There was an exception starting the filebeat service: $_.Exception" -Severity "Error"
-        throw "There was an exception starting the filebeat service: $_.Exception"
-        break
-    }
+    Write-Host "Attempting to start filebeat service if it's not running"
+    Write-Log -LogPath $FullLogPath -Message "Attempting to start filebeat service if it's not running" -Severity "Info"
+    # If ((Get-Service -Name filebeat).Status -ne "Running") {
+    #     Try {
+    #         Write-Host "Filebeats service was not running, trying to start it now"
+    #         Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
+    #         Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
+    #     }
+    #     Catch {
+    #         Write-Host "There was an exception starting the filebeat service: $_.Exception"
+    #         # Write-Log -LogPath $FullLogPath -Message "There was an exception starting the filebeat service: $_.Exception" -Severity "Error"
+    #         throw "There was an exception starting the filebeat service: $_.Exception"
+    #         break
+    #     }
+    # }
+    # Else {
+    # Write-Host "Filebeat service was running, "
+    # Write-Log -LogPath $FullLogPath -Message "Filebeat service was running, " -Severity "Info"
+    # }
 
     Write-Host "Confirming filebeat service is running"
     Write-Log -LogPath $FullLogPath -Message "Confirming filebeat service is running" -Severity "Info"
-    Try {
-        Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop
+    If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath)) {
+        Try {
+            Write-Host "Filebeats service was not running, trying to start it now"
+            Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
+            Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
+            If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop)) {
+                throw 'Filebeat service still not running after attempting to start it.'
+                break
+            }
+        }
+        Catch {
+            Write-Host "There was an exception confirming the running of the filebeat service: $_.Exception"
+            Write-Log -LogPath $FullLogPath -Message "There was an exception confirming the running of the filebeat service: $_.Exception" -Severity "Error"
+            throw "There was an exception confirming the running of the filebeat service: $_.Exception"
+            break
+        }
     }
-    Catch {
-        Write-Host "There was an exception confirming the running of the filebeat service: $_.Exception"
-        Write-Log -LogPath $FullLogPath -Message "There was an exception confirming the running of the filebeat service: $_.Exception" -Severity "Error"
-        throw "There was an exception confirming the running of the filebeat service: $_.Exception"
-        break
+    Else {
+        Write-Host "Filebeats service is running, exiting script now"
+        Write-Log -LogPath $FullLogPath -Message "Filebeats service is running, exiting script now" -Severity "Info"
     }
 
     Write-Host "$MyInvocation.MyCommand.Name finished without throwing error"

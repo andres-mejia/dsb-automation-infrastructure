@@ -215,6 +215,22 @@ Describe 'Get-Filebeat' {
     }
 }
 
+Describe 'Confirm-FilebeatServiceRunning' {
+    It 'Returns true when service is labeled as running' {
+        Mock -Verifiable -ModuleName $moduleName Get-WmiObject { [PSCustomObject]@{ State = "Running" } }
+
+        $result = Confirm-FilebeatServiceRunning -FullLogPath "logpath"
+        $result | Should -Be $true
+    }
+
+    It 'Returns false in all other cases' {
+        Mock -Verifiable -ModuleName $moduleName Get-WmiObject { [PSCustomObject]@{ State = "Fatal" } }
+
+        $result = Confirm-FilebeatServiceRunning -FullLogPath "logpath"
+        $result | Should -Be $false
+    }
+}
+
 Describe 'Install-Filebeat logging' {
 
     It 'It calls Start-Log' {
@@ -232,8 +248,7 @@ Describe 'Install-Filebeat logging' {
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
         Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
-        Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
-        Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName
+        Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $true }
 
         Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
         Assert-MockCalled Start-Log -Exactly 1 {$LogPath -eq $logPath -and $LogName -eq $logName} -ModuleName $moduleName
@@ -256,8 +271,7 @@ Describe 'Install-Filebeat setup' {
         Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
         Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
-        Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
-        Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName
+        Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $true }
 
         Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
         Assert-MockCalled Stop-FilebeatService -Exactly 1 -ModuleName $moduleName
@@ -279,8 +293,7 @@ Describe 'Install-Filebeat setup' {
         Mock -Verifiable -CommandName Get-FilebeatZip -ModuleName $moduleName
         Mock -Verifiable -CommandName Install-CustomFilebeat -ModuleName $moduleName
         Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
-        Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
-        Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName
+        Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $true }
 
         Mock -Verifiable -CommandName Remove-OldFilebeatFolders -ModuleName $moduleName -MockWith { return $false }
 
@@ -288,5 +301,73 @@ Describe 'Install-Filebeat setup' {
         Assert-MockCalled Remove-OldFilebeatFolders -Exactly 1 { $FullLogPath -eq (Join-Path -Path $logPath -ChildPath $logName) -and $FilebeatVersion -eq $correctVersion } -ModuleName $moduleName
         Assert-MockCalled Get-FilebeatZip -Exactly 1 { $FullLogPath -eq (Join-Path -Path $logPath -ChildPath $logName) } -ModuleName $moduleName
     }
+}
 
+Describe 'Confirm Filebeats service is running' {
+    Context 'Filbeat service not running' {
+        It 'Runs start-filebeatservice if service is not started' {
+            $downloadPath = "C:\fake\installpath"
+            $programFileDir = "C:\Program Files\Filebeat"
+            $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
+            $logPath = "C:/fake/logpath"
+            $logName = "fake-filebeat.log"
+            $correctVersion = "7.2.0"
+
+            Mock -Verifiable -CommandName Get-FilebeatService -ModuleName $moduleName { return $true } 
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
+
+            Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $false }
+            Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ParameterFilter { $PSBoundParameters['ErrorAction'] -eq "Stop" } -ModuleName $moduleName { return $true }
+            Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
+
+            Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
+            Assert-MockCalled Start-FilebeatService -Exactly 1 -ModuleName $moduleName
+        }
+        It 'Throws error if filebeat service still not started after trying to start' {
+            $downloadPath = "C:\fake\installpath"
+            $programFileDir = "C:\Program Files\Filebeat"
+            $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
+            $logPath = "C:/fake/logpath"
+            $logName = "fake-filebeat.log"
+            $correctVersion = "7.2.0"
+
+            Mock -Verifiable -CommandName Get-FilebeatService -ModuleName $moduleName { return $true } 
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
+
+            Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $false }
+            Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ParameterFilter { $PSBoundParameters['ErrorAction'] -eq "Stop" } -ModuleName $moduleName { return $false }
+            Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
+
+            { Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token' } | Should -Throw
+            Assert-VerifiableMock
+        }
+    }
+    Context 'Filebeat service is running' {
+        It 'Does not run start-filebeatservice if service is not started' {
+            $downloadPath = "C:\fake\installpath"
+            $programFileDir = "C:\Program Files\Filebeat"
+            $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
+            $logPath = "C:/fake/logpath"
+            $logName = "fake-filebeat.log"
+            $correctVersion = "7.2.0"
+
+            Mock -Verifiable -CommandName Get-FilebeatService -ModuleName $moduleName { return $true }
+            Mock -Verifiable -CommandName Start-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
+            Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
+
+            Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $true }
+            Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
+
+            Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token'
+            Assert-MockCalled Start-FilebeatService -Exactly 0 -ModuleName $moduleName
+        }
+    }
 }
