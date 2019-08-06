@@ -217,6 +217,7 @@ Describe 'Get-Filebeat' {
 
 Describe 'Confirm-FilebeatServiceRunning' {
     It 'Returns true when service is labeled as running' {
+        Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -ModuleName $moduleName Get-WmiObject { [PSCustomObject]@{ State = "Running" } }
 
         $result = Confirm-FilebeatServiceRunning -FullLogPath "logpath"
@@ -224,6 +225,7 @@ Describe 'Confirm-FilebeatServiceRunning' {
     }
 
     It 'Returns false in all other cases' {
+        Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -ModuleName $moduleName Get-WmiObject { [PSCustomObject]@{ State = "Fatal" } }
 
         $result = Confirm-FilebeatServiceRunning -FullLogPath "logpath"
