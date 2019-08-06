@@ -194,7 +194,7 @@ function Confirm-FilebeatServiceRunning {
     }
     else {
         Write-Host "Filebeat service state is: state"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: state" -Severity "Error"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: $state" -Severity "Error"
         Write-Host "Filebeat service is not running correctly"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity "Error"
         return $false
