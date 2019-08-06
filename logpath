@@ -9,3 +9,8 @@
 2019-08-06T11:28:13+02:00 Error message='Filebeat service is not running correctly' env='Dev' timeStamp=2019-08-06T11:28:13+02:00 level=Error pcName=DSBWPC502128
 2019-08-06T11:28:32+02:00 Info message='Filebeat Service started successfully' env='Dev' timeStamp=2019-08-06T11:28:32+02:00 level=Info pcName=DSBWPC502128
 2019-08-06T11:28:32+02:00 Error message='Filebeat service is not running correctly' env='Dev' timeStamp=2019-08-06T11:28:32+02:00 level=Error pcName=DSBWPC502128
+2019-08-06T13:00:07+02:00 Info message='Filebeat Service started successfully' env='Dev' timeStamp=2019-08-06T13:00:07+02:00 level=Info pcName=DSBWPC502128
+2019-08-06T13:00:07+02:00 Error message='Filebeat service is not running correctly' env='Dev' timeStamp=2019-08-06T13:00:07+02:00 level=Error pcName=DSBWPC502128
+2019-08-06T13:01:02+02:00 Info message='Filebeat Service started successfully' env='Dev' timeStamp=2019-08-06T13:01:02+02:00 level=Info pcName=DSBWPC502128
+2019-08-06T13:01:02+02:00 Error message='Filebeat service state is: @{State=Fatal}.State' env='Dev' timeStamp=2019-08-06T13:01:02+02:00 level=Error pcName=DSBWPC502128
+2019-08-06T13:01:02+02:00 Error message='Filebeat service is not running correctly' env='Dev' timeStamp=2019-08-06T13:01:02+02:00 level=Error pcName=DSBWPC502128
