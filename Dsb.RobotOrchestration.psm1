@@ -234,7 +234,8 @@ function Start-FilebeatService {
 
     Write-Host "Trying to start Filebeat service"
     Write-Log -LogPath $FullLogPath -Message "Trying to start Filebeat service" -Severity "Info"
-    Start-Service filebeat -ErrorAction Stop
+    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+    $service.StartService()
 }
 
 function Install-Filebeat {
