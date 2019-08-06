@@ -60,8 +60,7 @@ function Write-Log
         Add-Content -Path $LogPath -Value $logString -Force
     }
     Catch {
-        Write-Host "There was an error writing a log to $LogPath"
-        Throw "There was an error creating {$LogPath}: $_.Exception"
+        Write-Host "There was an error creating log: {$Message} for log: {$LogPath}: $_.Exception"
     }
 }
 
@@ -236,6 +235,7 @@ function Start-FilebeatService {
     Write-Log -LogPath $FullLogPath -Message "Trying to start Filebeat service" -Severity "Info"
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
     $service.StartService()
+    Start-Sleep -s 3
 }
 
 function Install-Filebeat {
@@ -354,9 +354,17 @@ function Install-Filebeat {
     If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath)) {
         Write-Host "Filebeats service was not running, trying to start it now"
         Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
-        Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
-        If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop)) {
-            throw 'Filebeat service still not running after attempting to start it.'
+        Try {
+            Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
+            If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop)) {
+                throw 'Filebeat service still not running after attempting to start it.'
+                break
+            }
+        }
+        Catch {
+            Write-Host "There was an exception trying to run the filebeat service: $_.Exception"
+            Write-Log -LogPath $FullLogPath -Message "There was an exception trying to run the filebeat service: $_.Exception" -Severity "Error"
+            throw "There was an exception trying to run the filebeat service: $_.Exception"
             break
         }
     }
