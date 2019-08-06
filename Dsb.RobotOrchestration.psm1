@@ -187,11 +187,13 @@ function Confirm-FilebeatServiceRunning {
     
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
     if ($service.State -eq "Running") {
-        Write-Host "Filebeat Service started successfully"
+        Write-Host "Filebeat Service is running successfully"
         Write-Log -LogPath $FullLogPath -Message "Filebeat Service started successfully" -Severity "Info"
         return $true
     }
     else {
+        Write-Host "Filebeat service state is: $service.State"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: $service.State" -Severity "Error"
         Write-Host "Filebeat service is not running correctly"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity "Error"
         return $false
@@ -348,19 +350,11 @@ function Install-Filebeat {
     Write-Host "Confirming filebeat service is running"
     Write-Log -LogPath $FullLogPath -Message "Confirming filebeat service is running" -Severity "Info"
     If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath)) {
-        Try {
-            Write-Host "Filebeats service was not running, trying to start it now"
-            Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
-            Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
-            If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop)) {
-                throw 'Filebeat service still not running after attempting to start it.'
-                break
-            }
-        }
-        Catch {
-            Write-Host "There was an exception confirming the running of the filebeat service: $_.Exception"
-            Write-Log -LogPath $FullLogPath -Message "There was an exception confirming the running of the filebeat service: $_.Exception" -Severity "Error"
-            throw "There was an exception confirming the running of the filebeat service: $_.Exception"
+        Write-Host "Filebeats service was not running, trying to start it now"
+        Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
+        Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
+        If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop)) {
+            throw 'Filebeat service still not running after attempting to start it.'
             break
         }
     }
@@ -399,7 +393,6 @@ function Install-CustomFilebeat {
         $service.delete()
     }
 
-    Write-Host "Trying to get workdir"
     $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
     Write-Host "Elastic setting is $elasticToken"
     # Create the new service.
