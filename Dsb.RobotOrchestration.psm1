@@ -344,23 +344,6 @@ function Install-Filebeat {
 
     Write-Host "Attempting to start filebeat service if it's not running"
     Write-Log -LogPath $FullLogPath -Message "Attempting to start filebeat service if it's not running" -Severity "Info"
-    # If ((Get-Service -Name filebeat).Status -ne "Running") {
-    #     Try {
-    #         Write-Host "Filebeats service was not running, trying to start it now"
-    #         Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
-    #         Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
-    #     }
-    #     Catch {
-    #         Write-Host "There was an exception starting the filebeat service: $_.Exception"
-    #         # Write-Log -LogPath $FullLogPath -Message "There was an exception starting the filebeat service: $_.Exception" -Severity "Error"
-    #         throw "There was an exception starting the filebeat service: $_.Exception"
-    #         break
-    #     }
-    # }
-    # Else {
-    # Write-Host "Filebeat service was running, "
-    # Write-Log -LogPath $FullLogPath -Message "Filebeat service was running, " -Severity "Info"
-    # }
 
     Write-Host "Confirming filebeat service is running"
     Write-Log -LogPath $FullLogPath -Message "Confirming filebeat service is running" -Severity "Info"
