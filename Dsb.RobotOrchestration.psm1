@@ -186,14 +186,15 @@ function Confirm-FilebeatServiceRunning {
     )
     
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
-    if ($service.State -eq "Running") {
+    $state = $service.State
+    if ($state -eq "Running") {
         Write-Host "Filebeat Service is running successfully"
         Write-Log -LogPath $FullLogPath -Message "Filebeat Service started successfully" -Severity "Info"
         return $true
     }
     else {
-        Write-Host "Filebeat service state is: $service.State"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: $service.State" -Severity "Error"
+        Write-Host "Filebeat service state is: state"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: state" -Severity "Error"
         Write-Host "Filebeat service is not running correctly"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity "Error"
         return $false
