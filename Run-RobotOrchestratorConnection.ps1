@@ -143,7 +143,9 @@ function Main {
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
             Break
         }
-        
+
+        Write-Host "Attempting to retrieve the scheduled job just created."
+        Write-Log -LogPath $LogFile -Message "Attempting to retrieve the scheduled job just created." -Severity "Info"
         $retrievedScheduledJob = Get-ScheduledJob $jobName
 
         If ($retrievedScheduledJob -eq $null) {
