@@ -14,7 +14,10 @@
         [string] $OrchestratorTenant,
 
         [Parameter(Mandatory = $true)]
-        [string] $HumioIngestToken
+        [string] $HumioIngestToken,
+        
+        [Parameter(Mandatory = $true)]
+        [string] $AdminPassword
     )
 
 $script:ErrorActionPreference = "SilentlyContinue"
@@ -59,7 +62,7 @@ function Main {
         Write-Host "Attempting to download file from from: $orchModule"
         $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
         $wc = New-Object System.Net.WebClient
-        $wc.DownloadFile($orchModule, $orchModuleDownload)     
+        # $wc.DownloadFile($orchModule, $orchModuleDownload)     
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"
@@ -116,7 +119,6 @@ function Main {
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            # Register-ScheduledJob -Name 'ConnectRobotOrchestrator' -FilePath $connectRoboDownload -Trigger (New-JobTrigger -Once -At (Get-Date -Hour 0 -Minute 00 -Second 00) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration ([TimeSpan]::MaxValue))
             & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -OrchestratorUrl $OrchestratorUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop
         }
         Catch {
@@ -135,11 +137,15 @@ function Main {
                 param($scriptPath, $logPath, $logName, $orchestratorUrl, $orchestratorTenant, $robotKey)
                 & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorTenant $orchestratorTenant -RobotKey $robotKey
             }
-            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger -ErrorAction Stop
+            $user = "local\administrator"
+            $password = $AdminPassword | ConvertTo-SecureString -AsPlainText -Force
+            $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $user, $password
+            $options = New-ScheduledJobOption -RunElevated
+            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
         }
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
+            Write-Log -LogPath $LogFile -Message "Scheduling the connection job failed, reason: $_.Exception" -Severity "Error"
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
             Break
         }
