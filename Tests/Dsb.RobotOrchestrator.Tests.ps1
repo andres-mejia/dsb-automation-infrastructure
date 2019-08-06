@@ -56,10 +56,8 @@ Describe 'Remove-OldFilebeatFolders' {
         $programFileFilebeat = "C:\Program Files\Filebeat"
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
-        
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $unzippedFile } -MockWith { return $true } -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $unzippedFile -and $PSBoundParameters['Force'] -eq $true }
-        
         Mock -Verifiable -CommandName Test-Path -ParameterFilter { $Path -eq $programFileFilebeat } -MockWith { return $true } -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $programFileFilebeat -and $PSBoundParameters['Force'] -eq $true }
 
@@ -76,7 +74,7 @@ Describe 'Get-FilebeatConfig' {
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
         Mock -Verifiable -CommandName Test-Path -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml } -MockWith { return $true }
 
         Get-FilebeatConfig -FullLogPath 'fakelog\path'
@@ -101,7 +99,7 @@ Describe 'Get-FilebeatConfig' {
 
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
+        Mock -Verifiable -CommandName Download-File -ModuleName $moduleName
         Mock -Verifiable -CommandName Test-Path -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml } -MockWith { return $false }
 
        { Get-FilebeatConfig -FullLogPath 'fakelog\path' } | Should -Throw
@@ -257,8 +255,6 @@ Describe 'Install-Filebeat setup' {
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
         Mock -Verifiable -CommandName Stop-FilebeatService -ModuleName $moduleName
         Mock -Verifiable -CommandName Remove-Item -ModuleName $moduleName -ParameterFilter { $Path -eq $filebeatYaml -and $PSBoundParameters['Force'] -eq $true }
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
-        Mock -Verifiable -CommandName Invoke-WebRequest -ModuleName $moduleName
         Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
         Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
         Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName
