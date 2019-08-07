@@ -58,10 +58,10 @@ function Write-Log
 
     $logString = Format-LogMessage -Message $Message -Environment $Environment -LogPath $LogPath -Severity $Severity 
     Try {
-        $logString >> $LogPath
+        Add-Content -Path $LogPath -Value $logString -Force
     }
     Catch {
-        Write-Host "There was a problem writing to the log file"
+        Write-Host "There was an error creating log: {$Message} for log: {$LogPath}: $_.Exception"
     }
 }
 
