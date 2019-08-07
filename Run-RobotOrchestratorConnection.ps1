@@ -65,7 +65,7 @@ function Main {
         Write-Host "Attempting to download file from from: $orchModule"
         $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
         $wc = New-Object System.Net.WebClient
-        $wc.DownloadFile($orchModule, $orchModuleDownload)     
+        $wc.DownloadFile($orchModule, $orchModuleDownload)
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"
@@ -106,16 +106,30 @@ function Main {
         Write-Host "Tenant is $OrchestratorTenant"
         Write-Log -LogPath $LogFile -Message "Tenant is $OrchestratorTenant" -Severity "Info"
         
+        Write-Host "Trying to install Filebeat"
+        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
+        Try {
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
+        }
+        Catch {
+            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
+            Throw 'There was a problem installing Filebeats'
+            break
+        }
+
+        Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+
         Write-Host "Attempting to schedule robot connection script located at: $connectRoboDownload"
         Write-Log -LogPath $LogFile -Message "Attempting to schedule robot connection script located at: $connectRoboDownload" -Severity "Info"        
         $jobName = 'ConnectUiPathRobotOrchestrator'
-        $existingJobs = Get-ScheduledJob
+        $existingJobs = Get-ScheduledTask
         
         ForEach ($job in $existingJobs) {
             If ($job.Name -eq $jobName) {
                 Write-Host "The job with name: $jobName existed, unregistering now"
                 Write-Log -LogPath $LogFile -Message "The job with name: $jobName existed, unregistering now" -Severity "Info"
-                Unregister-ScheduledJob $jobName
+                Unregister-ScheduledTask $jobName
             }
         }
 
@@ -134,6 +148,10 @@ function Main {
         Try {
             Write-Host "Trying to register robot connection as a scheduled job"
             Write-Log -LogPath $LogFile -Message "Trying to register robot connection as a scheduled job" -Severity "Info"
+
+            Write-Host "Username is: $AdminUser"
+            Write-Log -LogPath $LogFile -Message "Username is: $AdminUser" -Severity "Info"
+
             $repeat = (New-TimeSpan -Minutes 5)
             $trigger = New-JobTrigger -Once -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat
             $invokeScriptContent = {   
@@ -143,12 +161,11 @@ function Main {
             $password = $AdminPassword | ConvertTo-SecureString -AsPlainText -Force
             $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $AdminUser, $password
             $options = New-ScheduledJobOption -RunElevated
-            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger # -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
+            # Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger # -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
             
             $triggerAction = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval $repeat -RepetitionDuration ([System.TimeSpan]::MaxValue)
-            $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ExecutionPolicy Bypass -command 'Invoke-Command -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey'" 
-            $Task = New-ScheduledTask -Action $action -Trigger $triggerAction
-            Register-ScheduledTask -TaskName $jobName -Trigger $triggerAction -Action $action -RunLevel Highest -Force
+            $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ExecutionPolicy Bypass -File $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -OrchestratorUrl $OrchestratorUrl -OrchestratorTenant $OrchestratorTenant" 
+            Register-ScheduledTask -TaskName $jobName -Trigger $triggerAction -Action $action -RunLevel Highest -Force -ErrorAction Stop
         }
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
@@ -159,37 +176,24 @@ function Main {
 
         Write-Host "Attempting to retrieve the scheduled job just created."
         Write-Log -LogPath $LogFile -Message "Attempting to retrieve the scheduled job just created." -Severity "Info"
-        $retrievedScheduledJob = Get-ScheduledJob $jobName
+        $retrievedScheduledTask = Get-ScheduledTask $jobName
 
-        If ($retrievedScheduledJob -eq $null) {
-            Write-Host "Retrieving the scheduled job returned null"
-            Write-Log -LogPath $LogFile -Message "Retrieving the scheduled job returned null" -Severity "Error"
-            Throw "Scheduled orchestrator connection job did not exist"
+        If ($retrievedScheduledTask -eq $null) {
+            Write-Host "Retrieving the schedule task returned null"
+            Write-Log -LogPath $LogFile -Message "Retrieving the schedule task returned null" -Severity "Error"
+            Throw "The scheduled Orchestrator connection task did not"
             Break
         }
 
-        $runJob = $retrievedScheduledJob.Run()
-        If ($runJob.ChildJobs[0].JobStateInfo.State -eq "Failed") {
-            $failureReason = $runJob.ChildJobs[0].JobStateInfo.Reason.ToString()
-            Write-Host "Running the connection job failed, reason: $failureReason"
-            Write-Log -LogPath $LogFile -Message "Running the connection job failed, reason: $failureReason" -Severity "Error"
-            Throw "Running the connection job failed, reason: $runJob.ChildJobs[0].JobStateInfo.Reason"
-            Break
-        }
-
-        Write-Host "Trying to install Filebeat"
-        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
         Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
+            Start-ScheduledTask -TaskName $jobName -ErrorAction Stop
         }
         Catch {
-            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
-            Throw 'There was a problem installing Filebeats'
-            break
+            Write-Host "Running the connection task failed, reason: $_.Exception"
+            Write-Log -LogPath $LogFile -Message "Running the connection task failed, reason: $_.Exception" -Severity "Error"
+            Throw "Running the connection job failed, reason: $_.Exception"
+            Break
         }
-
-        Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
         Write-Host "Creating scheduled job did not throw error."
         Write-Log -LogPath $LogFile -Message "Creating scheduled job did not throw error." -Severity "Info"
