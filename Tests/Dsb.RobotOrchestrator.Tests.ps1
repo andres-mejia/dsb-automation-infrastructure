@@ -49,6 +49,26 @@ Describe 'Start-Log' {
     }
 }
 
+Describe 'Format-LogMessage' {
+    It 'Correctly formats a string' {
+        $pcName = $env:computername
+        $logPath = "logpath"
+        $message = "Something went terribly wrong"
+        $environment = "dev"
+        $severity = "Error"
+        $date = "blah"
+
+        Mock -Verifiable -CommandName Get-Date -MockWith { return "blah" } -ModuleName $moduleName
+        
+        $expectedStringError = "$date $severity message=$message env=$environment timeStamp=$date level=$severity pcName=$pcName logfile=$logPath"
+        Write-Host $expectedStringError
+        $logString = Format-LogMessage -LogPath $logPath -Message $message -Environment $environment -Severity $severity
+        Write-Host $logString
+        Assert-VerifiableMock
+        $logString | Should -BeExactly $expectedStringError 
+    }
+}
+
 Describe 'Remove-OldFilebeatFolders' {
     It 'Calls remove-item if original filebeats dirs exists' {
         $FilebeatVersion = "7.2.0"
@@ -226,11 +246,48 @@ Describe 'Confirm-FilebeatServiceRunning' {
 
     It 'Returns false in all other cases' {
         Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
-        Mock -Verifiable -ModuleName $moduleName Get-WmiObject { [PSCustomObject]@{ State = "Fatal" } }
+        Mock -Verifiable -ModuleName $moduleName 'Get-WmiObject' { }
 
         $result = Confirm-FilebeatServiceRunning -FullLogPath "logpath"
         $result | Should -Be $false
     }
+}
+
+Describe 'Start-FilebeatService' {
+    Context 'With a missing service'{
+        It 'Throws error if the service is null' {
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Start-Sleep -ModuleName $moduleName
+            Mock -Verifiable -ModuleName $moduleName Get-WmiObject { return $null }
+
+            { Start-FilebeatService -FullLogPath 'logpath' } | Should -Throw
+        }
+    }
+    Context 'With an existing service' {
+        Mock -ModuleName $moduleName Get-WmiObject {
+            $object =  New-Object psobject -Property @{
+                MockedValue = $true
+            }
+            Add-Member -InputObject $object -MemberType ScriptMethod -Name StartService -Value { 
+                return $this.MockecValue 
+            } 
+            return $object
+        }
+        It 'Throws error if the service is not running after start attempt' {
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -CommandName Start-Sleep -ModuleName $moduleName
+            Mock -Verifiable -ModuleName $moduleName Confirm-FilebeatServiceRunning { return $false }
+
+            { Start-FilebeatService -FullLogPath 'logpath' } | Should -Throw
+        }
+        It 'Does not throw error if service starts successfully' {
+            Mock -Verifiable -CommandName Write-Log -ModuleName $moduleName
+            Mock -Verifiable -ModuleName $moduleName Confirm-FilebeatServiceRunning { return $true }
+
+            { Start-FilebeatService -FullLogPath 'logpath' } | Should -Not -Throw
+        }
+    }
+
 }
 
 Describe 'Install-Filebeat logging' {
@@ -343,11 +400,9 @@ Describe 'Confirm Filebeats service is running' {
             Mock -Verifiable -CommandName Get-FilebeatConfig -ModuleName $moduleName
 
             Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ModuleName $moduleName { return $false }
-            Mock -Verifiable -CommandName Confirm-FilebeatServiceRunning -ParameterFilter { $PSBoundParameters['ErrorAction'] -eq "Stop" } -ModuleName $moduleName { return $false }
-            Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName
+            Mock -Verifiable -CommandName Start-FilebeatService -ModuleName $moduleName { Throw 'Service not running' }
 
             { Install-Filebeat -LogPath $logPath -LogName $logName -DownloadPath $DownloadPath -FilebeatVersion $correctVersion -HumioIngestToken 'token' } | Should -Throw
-            Assert-VerifiableMock
         }
     }
     Context 'Filebeat service is running' {

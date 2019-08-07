@@ -17,6 +17,9 @@
         [string] $HumioIngestToken,
         
         [Parameter(Mandatory = $true)]
+        [string] $AdminUser,
+
+        [Parameter(Mandatory = $true)]
         [string] $AdminPassword
     )
 
@@ -137,11 +140,15 @@ function Main {
                 param($scriptPath, $logPath, $logName, $orchestratorUrl, $orchestratorTenant, $robotKey)
                 & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorTenant $orchestratorTenant -RobotKey $robotKey
             }
-            $user = "local\administrator"
             $password = $AdminPassword | ConvertTo-SecureString -AsPlainText -Force
-            $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $user, $password
+            $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $AdminUser, $password
             $options = New-ScheduledJobOption -RunElevated
-            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
+            Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger # -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
+            
+            $triggerAction = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval $repeat -RepetitionDuration ([System.TimeSpan]::MaxValue)
+            $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ExecutionPolicy Bypass -command 'Invoke-Command -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey'" 
+            $Task = New-ScheduledTask -Action $action -Trigger $triggerAction
+            Register-ScheduledTask -TaskName $jobName -Trigger $triggerAction -Action $action -RunLevel Highest -Force
         }
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
@@ -149,20 +156,6 @@ function Main {
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
             Break
         }
-
-        Write-Host "Trying to install Filebeat"
-        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
-        Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
-        }
-        Catch {
-            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
-            Throw 'There was a problem installing Filebeats'
-            break
-        }
-
-        Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
         Write-Host "Attempting to retrieve the scheduled job just created."
         Write-Log -LogPath $LogFile -Message "Attempting to retrieve the scheduled job just created." -Severity "Info"
@@ -183,6 +176,20 @@ function Main {
             Throw "Running the connection job failed, reason: $runJob.ChildJobs[0].JobStateInfo.Reason"
             Break
         }
+
+        Write-Host "Trying to install Filebeat"
+        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
+        Try {
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
+        }
+        Catch {
+            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
+            Throw 'There was a problem installing Filebeats'
+            break
+        }
+
+        Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
         Write-Host "Creating scheduled job did not throw error."
         Write-Log -LogPath $LogFile -Message "Creating scheduled job did not throw error." -Severity "Info"

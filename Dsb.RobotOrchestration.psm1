@@ -48,20 +48,41 @@ function Write-Log
         
         [Parameter(Mandatory=$true)]
         [string]$Message,
+
+        [string]$Environment = "dev",
         
         [Parameter(Mandatory=$true)]
-        [ValidateSet("Info",'Warn',"Error")]
+        [ValidateSet("Info", "Warn","Error")]
         [string]$Severity = "Info"
     )
 
-    $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
-    $logString = "$now $Severity message='$Message' env='Dev' timeStamp=$now level=$Severity pcName=$env:computername"
+    $logString = Format-LogMessage -Message $Message -Environment $Environment -LogPath $LogPath -Severity $Severity 
     Try {
-        Add-Content -Path $LogPath -Value $logString -Force
+        $logString >> $LogPath
     }
     Catch {
-        Write-Host "There was an error creating log: {$Message} for log: {$LogPath}: $_.Exception"
+        Write-Host "There was a problem writing to the log file"
     }
+}
+
+function Format-LogMessage {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$LogPath,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$Message,
+
+        [Parameter(Mandatory=$true)]
+        [string]$Environment,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$Severity
+    )
+
+    $now = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
+    $logString = "$now $Severity message=$Message env=$Environment timeStamp=$now level=$Severity pcName=$env:computername logfile=$LogPath"
+    return $logString
 }
 
 function Download-File {
@@ -173,7 +194,7 @@ function Get-FilebeatConfig {
     
     Download-File -FullLogPath $FullLogPath -Url $configUri -OutPath $filebeatYaml
     if (-not (Test-Path -Path $filebeatYaml)) {
-        throw [System.IO.FileNotFoundException] "$filebeatYaml not found."
+        Throw [System.IO.FileNotFoundException] "$filebeatYaml not found."
     }
 }
 
@@ -186,16 +207,16 @@ function Confirm-FilebeatServiceRunning {
     
     $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
     $state = $service.State
+    Write-Host "Filebeat service state is: $state"
+    Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: $state" -Severity "Info"
     if ($state -eq "Running") {
         Write-Host "Filebeat Service is running successfully"
         Write-Log -LogPath $FullLogPath -Message "Filebeat Service started successfully" -Severity "Info"
         return $true
     }
     else {
-        Write-Host "Filebeat service state is: state"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service state is: $state" -Severity "Error"
-        Write-Host "Filebeat service is not running correctly"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running correctly" -Severity "Error"
+        Write-Host "Filebeat service is not running"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running" -Severity "Warn"
         return $false
     }
 }
@@ -227,15 +248,69 @@ function Remove-OldFilebeatFolders {
 function Start-FilebeatService {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
         [string] $FullLogPath
     )
-
+    
     Write-Host "Trying to start Filebeat service"
     Write-Log -LogPath $FullLogPath -Message "Trying to start Filebeat service" -Severity "Info"
-    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+    $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"    
+    If ($service -eq $null) {
+        Write-Host "Filebeat service is null"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service is null" -Severity "Error"
+        Throw "Filebeat service is null"
+        Break
+    }
     $service.StartService()
     Start-Sleep -s 3
+    $serviceIsRunning = Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath
+    If ($serviceIsRunning -ne $true) {
+        Write-Host "Filebeat not running after attempting to start it"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat not running after attempting to start it" -Severity "Error"
+        Throw "Filebeat not running after attempting to start it"
+        Break
+    }
+}
+
+function Install-CustomFilebeat {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $HumioIngestToken,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FullLogPath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FilebeatLocation
+    )
+
+    # Delete and stop the service if it already exists.
+    Write-Host "Checking for existing Filebeat service again."
+    Write-Log -LogPath $FullLogPath -Message "Checking for existing Filebeat service again." -Severity "Info"
+
+    if (Get-Service filebeat -ErrorAction SilentlyContinue) {
+        Write-Host "Filebeat service existed"
+        Write-Log -LogPath $FullLogPath -Message "Filebeat service existed" -Severity "Info"
+        $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
+        $service.StopService()
+        Start-Sleep -s 1
+        $service.delete()
+    }
+
+    $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
+    Write-Host "Elastic setting is $elasticToken"
+    # Create the new service.
+    New-Service -name filebeat `
+    -displayName Filebeat `
+    -binaryPathName "`"$FilebeatLocation\filebeat.exe`" -c `"$FilebeatLocation\filebeat.yml`" -path.home `"$FilebeatLocation`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"$elasticToken`""
+
+    # Attempt to set the service to delayed start using sc config.
+    Try {
+        Start-Process -FilePath sc.exe -ArgumentList 'config filebeat start=delayed-auto'
+    }
+    Catch { 
+        Throw "There was an exception starting filebeat process: $_.Exception"
+    }
 }
 
 function Install-Filebeat {
@@ -292,8 +367,8 @@ function Install-Filebeat {
         Catch {
             Write-Host "There was an exception deleting old Filebeat folders: $_.Exception"
             Write-Log -LogPath $FullLogPath -Message "There was an exception deleting old Filebeat folders: $_.Exception" -Severity "Error"
-            throw "There was an exception deleting old Filebeat folders: $_.Exception"
-            break
+            Throw "There was an exception deleting old Filebeat folders: $_.Exception"
+            Break
         }
 
         Try {
@@ -304,8 +379,8 @@ function Install-Filebeat {
         Catch {
             Write-Host "There was an exception retrieving/expanding filebeat zip: $_.Exception"
             Write-Log -LogPath $FullLogPath -Message "There was an exception retrieving/expanding filebeat zip: $_.Exception" -Severity "Error"
-            throw "There was an exception retrieving/expanding filebeat zip: $_.Exception"
-            break
+            Throw "There was an exception retrieving/expanding filebeat zip: $_.Exception"
+            Break
         }
 
         Write-Host "Attempting to install Filebeat"
@@ -326,8 +401,8 @@ function Install-Filebeat {
             cd $beforeCd
             Write-Host "There was an exception installing Filebeat: $_.Exception"
             Write-Log -LogPath $FullLogPath -Message $_.Exception -Severity "Error"
-            throw "There was an exception installing Filebeat: $_.Exception"
-            break
+            Throw "There was an exception installing Filebeat: $_.Exception"
+            Break
         }
     }
 
@@ -342,30 +417,26 @@ function Install-Filebeat {
     Catch {
         Write-Host "There was an exception retrieving the filebeat config: $_.Exception"
         Write-Log -LogPath $FullLogPath -Message "There was an exception retrieving the filebeat config: $_.Exception" -Severity "Error"
-        throw "There was an exception retrieving the filebeat config: $_.Exception"
-        break
+        Throw "There was an exception retrieving the filebeat config: $_.Exception"
+        Break
     }
 
     Write-Host "Attempting to start filebeat service if it's not running"
     Write-Log -LogPath $FullLogPath -Message "Attempting to start filebeat service if it's not running" -Severity "Info"
 
-    Write-Host "Confirming filebeat service is running"
-    Write-Log -LogPath $FullLogPath -Message "Confirming filebeat service is running" -Severity "Info"
+    Write-Host "Checking for running filebeat service"
+    Write-Log -LogPath $FullLogPath -Message "Checking for running filebeat service" -Severity "Info"
     If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath)) {
         Write-Host "Filebeats service was not running, trying to start it now"
-        Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Info"
+        Write-Log -LogPath $FullLogPath -Message "Filebeats service was not running, trying to start it now" -Severity "Warn"
         Try {
             Start-FilebeatService -FullLogPath $FullLogPath -ErrorAction Stop
-            If (!(Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath -ErrorAction Stop)) {
-                throw 'Filebeat service still not running after attempting to start it.'
-                break
-            }
         }
         Catch {
             Write-Host "There was an exception trying to run the filebeat service: $_.Exception"
             Write-Log -LogPath $FullLogPath -Message "There was an exception trying to run the filebeat service: $_.Exception" -Severity "Error"
-            throw "There was an exception trying to run the filebeat service: $_.Exception"
-            break
+            Throw "There was an exception trying to run the filebeat service: $_.Exception"
+            Break
         }
     }
     Else {
@@ -373,54 +444,13 @@ function Install-Filebeat {
         Write-Log -LogPath $FullLogPath -Message "Filebeats service is running, exiting script now" -Severity "Info"
     }
 
-    Write-Host "$MyInvocation.MyCommand.Name finished without throwing error"
-    Write-Log -LogPath $FullLogPath -Message "$MyInvocation.MyCommand.Name finished without throwing error" -Severity "Info"
-}
-
-function Install-CustomFilebeat {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string] $HumioIngestToken,
-
-        [Parameter(Mandatory = $true)]
-        [string] $FullLogPath,
-
-        [Parameter(Mandatory = $true)]
-        [string] $FilebeatLocation
-    )
-
-    # Delete and stop the service if it already exists.
-    Write-Host "Checking for existing Filebeat service again."
-    Write-Log -LogPath $FullLogPath -Message "Checking for existing Filebeat service again." -Severity "Info"
-
-    if (Get-Service filebeat -ErrorAction SilentlyContinue) {
-        Write-Host "Filebeat service existed"
-        Write-Log -LogPath $FullLogPath -Message "Filebeat service existed" -Severity "Info"
-        $service = Get-WmiObject -Class Win32_Service -Filter "name='filebeat'"
-        $service.StopService()
-        Start-Sleep -s 1
-        $service.delete()
-    }
-
-    $elasticToken = "output.elasticsearch.password=$HumioIngestToken"
-    Write-Host "Elastic setting is $elasticToken"
-    # Create the new service.
-    New-Service -name filebeat `
-    -displayName Filebeat `
-    -binaryPathName "`"$FilebeatLocation\filebeat.exe`" -c `"$FilebeatLocation\filebeat.yml`" -path.home `"$FilebeatLocation`" -path.data `"C:\ProgramData\filebeat`" -path.logs `"C:\ProgramData\filebeat\logs`" -E `"$elasticToken`""
-
-    # Attempt to set the service to delayed start using sc config.
-    Try {
-        Start-Process -FilePath sc.exe -ArgumentList 'config filebeat start=delayed-auto'
-    }
-    Catch { 
-        throw "There was an exception starting filebeat process: $_.Exception"
-    }
+    Write-Host "$MyInvocation.MyCommand.Name finished without Throwing error"
+    Write-Log -LogPath $FullLogPath -Message "$MyInvocation.MyCommand.Name finished without Throwing error" -Severity "Info"
 }
 
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
+Export-ModuleMember -Function Format-LogMessage
 Export-ModuleMember -Function Install-Filebeat
 Export-ModuleMember -Function Get-FilebeatZip
 Export-ModuleMember -Function Stop-FilebeatService
