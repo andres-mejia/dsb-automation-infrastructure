@@ -168,8 +168,6 @@ function Main {
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
             Write-Log -LogPath $LogFile -Message "Scheduling the connection job failed, reason: $_.Exception" -Severity "Error"
-            Throw "There was an error trying to run robot connection script, exception: $_.Exception"
-            Break
         }
 
         Write-Host "Attempting to retrieve the scheduled job just created."
@@ -179,8 +177,6 @@ function Main {
         If ($retrievedScheduledTask -eq $null) {
             Write-Host "Retrieving the schedule task returned null"
             Write-Log -LogPath $LogFile -Message "Retrieving the schedule task returned null" -Severity "Error"
-            Throw "The scheduled Orchestrator connection task did not"
-            Break
         }
 
         Try {
@@ -189,8 +185,6 @@ function Main {
         Catch {
             Write-Host "Running the connection task failed, reason: $_.Exception"
             Write-Log -LogPath $LogFile -Message "Running the connection task failed, reason: $_.Exception" -Severity "Error"
-            Throw "Running the connection job failed, reason: $_.Exception"
-            Break
         }
 
         Write-Host "Creating scheduled job did not throw error."
