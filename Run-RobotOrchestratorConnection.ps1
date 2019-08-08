@@ -16,10 +16,8 @@
         [Parameter(Mandatory = $true)]
         [string] $HumioIngestToken,
         
-        [Parameter(Mandatory = $true)]
         [string] $AdminUser,
 
-        [Parameter(Mandatory = $true)]
         [string] $AdminPassword
     )
 
