@@ -109,13 +109,11 @@ function Main {
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
         Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
-            Throw 'There was a problem installing Filebeats'
-            break
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
