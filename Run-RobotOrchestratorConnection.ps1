@@ -65,7 +65,7 @@ function Main {
         Write-Host "Attempting to download file from from: $orchModule"
         $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
         $wc = New-Object System.Net.WebClient
-        $wc.DownloadFile($orchModule, $orchModuleDownload)
+        # $wc.DownloadFile($orchModule, $orchModuleDownload)
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"
@@ -172,30 +172,20 @@ function Main {
 
         Write-Host "Attempting to retrieve the scheduled job just created."
         Write-Log -LogPath $LogFile -Message "Attempting to retrieve the scheduled job just created." -Severity "Info"
-        $retrievedScheduledTask = Get-ScheduledTask $jobName
-
-        If ($retrievedScheduledTask -eq $null) {
-            Write-Host "Retrieving the schedule task returned null"
-            Write-Log -LogPath $LogFile -Message "Retrieving the schedule task returned null" -Severity "Error"
-        }
-
         Try {
-            Start-ScheduledTask -TaskName $jobName -ErrorAction Stop
+            $retrievedScheduledTask = Get-ScheduledTask $jobName -ErrorAction Stop
+            Start-ScheduledTask -TaskName $jobName -ErrorAction Stop            
+            Write-Host "Creating scheduled job did not throw error."
+            Write-Log -LogPath $LogFile -Message "Creating scheduled job did not throw error." -Severity "Info"
         }
         Catch {
-            Write-Host "Running the connection task failed, reason: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "Running the connection task failed, reason: $_.Exception" -Severity "Error"
+            Write-Host "Finding and trying to run the scheduled task raised exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message "Finding and trying to run the scheduled task raised exception: $_.Exception" -Severity "Error"
         }
-
-        Write-Host "Creating scheduled job did not throw error."
-        Write-Log -LogPath $LogFile -Message "Creating scheduled job did not throw error." -Severity "Info"
-
-        End {
-            Write-Host "$MyInvocation.MyCommand.Name finished without throwing error"
-            Write-Log -LogPath $LogFile -Message "$MyInvocation.MyCommand.Name finished without throwing error" -Severity "Info"
-            Write-Host "$MyInvocation.MyCommand.Name is exiting"
-            Write-Log -LogPath $LogFile -Message "$MyInvocation.MyCommand.Name is exiting" -Severity "Info"        
-        }
+    }
+    End {
+        Write-Host "Run-RobotOrchestrationConnection script has finished running. Exiting now"
+        Write-Log -LogPath $LogFile -Message "Run-RobotOrchestrationConnection script has finished running. Exiting now" -Severity "Info"        
     }
 }
 
