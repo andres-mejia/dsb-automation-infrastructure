@@ -65,7 +65,7 @@ function Main {
         Write-Host "Attempting to download file from from: $orchModule"
         $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
         $wc = New-Object System.Net.WebClient
-        # $wc.DownloadFile($orchModule, $orchModuleDownload)
+        $wc.DownloadFile($orchModule, $orchModuleDownload)
 
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"
