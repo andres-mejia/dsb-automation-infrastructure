@@ -109,13 +109,11 @@ function Main {
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
         Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
-            Throw 'There was a problem installing Filebeats'
-            break
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
@@ -170,8 +168,6 @@ function Main {
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
             Write-Log -LogPath $LogFile -Message "Scheduling the connection job failed, reason: $_.Exception" -Severity "Error"
-            Throw "There was an error trying to run robot connection script, exception: $_.Exception"
-            Break
         }
 
         Write-Host "Attempting to retrieve the scheduled job just created."
@@ -181,8 +177,6 @@ function Main {
         If ($retrievedScheduledTask -eq $null) {
             Write-Host "Retrieving the schedule task returned null"
             Write-Log -LogPath $LogFile -Message "Retrieving the schedule task returned null" -Severity "Error"
-            Throw "The scheduled Orchestrator connection task did not"
-            Break
         }
 
         Try {
@@ -191,8 +185,6 @@ function Main {
         Catch {
             Write-Host "Running the connection task failed, reason: $_.Exception"
             Write-Log -LogPath $LogFile -Message "Running the connection task failed, reason: $_.Exception" -Severity "Error"
-            Throw "Running the connection job failed, reason: $_.Exception"
-            Break
         }
 
         Write-Host "Creating scheduled job did not throw error."
