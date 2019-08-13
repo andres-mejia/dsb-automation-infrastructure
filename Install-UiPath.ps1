@@ -18,9 +18,6 @@
         [String] $tenant,
 
         [Parameter()]
-        [bool] $connectToOrchestator = $false,
-
-        [Parameter()]
         [string] $installationFolder,
 
         [Parameter()]
@@ -51,9 +48,7 @@ function Main {
       [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
       if(!$orchSSLcheck) {
-
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-
       }
 
       #Setup temp dir in %appdata%\Local\Temp
@@ -64,12 +59,11 @@ function Main {
       $msiName = 'UiPathStudio.msi'
       $msiPath = Join-Path $script:tempDirectory $msiName
       $robotExePath = Get-UiRobotExePath
+
+      Write-Host "The result of Get-UiRobotExePath is: $robotExePath"
       if (!(Test-Path $robotExePath)) {
         Download-File -url "https://download.uipath.com/versions/$studioVersion/UiPathStudio.msi" -outputFile $msiPath
       }
-      $connectScript = "Connect-RobotOrchestrator.ps1"
-      $connectScriptUri = "https://raw.githubusercontent.com/nkuik/Infrastructure/master/Setup/$connectScript"      
-      Download-File -url $uri -outputFile $connectRobotScript
   }
 
   Process {
@@ -125,23 +119,6 @@ function Main {
     } else {
       Write-Host "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
       Log-Write -LogPath $sLogFile -LineValue "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
-    }
-
-    If ($connectToOrchestator) {
-      Try {
-        & "./$connectScript" -tenant $tenant -orchestratorUrl $orchestratorUrl -machineKeysUrl $machineKeysUrl
-      }
-      Catch {
-          if ($_.Exception) {
-            Write-Host "There was an error installing UiPath: $_.Exception"
-            Log-Error -LogPath $sLogFile -ErrorDesc $_.Exception -ExitGracefully $True
-          }
-          else {
-            Write-Host "There was an error installing UiPath, but the exception was empty"
-            Log-Error -LogPath $sLogFile -ErrorDesc "There was an error, but it was blank" -ExitGracefully $True
-          }
-          Break
-      }
     }
 
     Write-Host "Removing temp directory $($script:tempDirectory)"

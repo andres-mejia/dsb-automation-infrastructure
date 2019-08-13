@@ -17,8 +17,8 @@
         [string] $HumioIngestToken,
         
         [string] $AdminUser,
-
-        [string] $AdminPassword
+        [string] $AdminPassword,
+        [string] $AdminDomain
     )
 
 $script:ErrorActionPreference = "SilentlyContinue"
@@ -65,6 +65,11 @@ function Main {
         $wc = New-Object System.Net.WebClient
         $wc.DownloadFile($orchModule, $orchModuleDownload)
 
+        $installRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Install-UiPath.ps1"
+        Write-Host "Attempting to download file from from: $installRobo"
+        $script:installRoboDownload = "$connectRoboPath\Install-UiPath.ps1"
+        $wc.DownloadFile($installRobo, $installRoboDownload)        
+
         $connectRobo = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Connect-RobotToOrchestrator.ps1"
         Write-Host "Attempting to download file from from: $connectRobo"
         $script:connectRoboDownload = "$connectRoboPath\Connect-RobotToOrchestrator.ps1"
@@ -92,8 +97,8 @@ function Main {
     }   
 
     Process {
-        Write-Host "User is: $env:username"
-        Write-Log -LogPath $LogFile -Message "User is: $env:username" -Severity "Info"
+        Write-Host "Username for user running this script is: $env:username"
+        Write-Log -LogPath $LogFile -Message "Username for user running this script is: $env:username" -Severity "Info"
         
         Write-Host "Logging to file $LogFile"
         Write-Log -LogPath $LogFile -Message "Logging to file $LogFile" -Severity "Info"
@@ -129,6 +134,18 @@ function Main {
             }
         }
 
+        Write-Host "Trying to install UiPath"
+        Write-Log -LogPath $LogFile -Message "Trying to install UiPath" -Severity "Info"
+        Try {
+            & $installRoboDownload -studioVersion 19.4.3 -robotType Nonproduction -ErrorAction Stop
+        }
+        Catch {
+            Write-Host "There was an error trying to install UiPath, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
+            Throw "There was an error trying to install UiPath, exception: $_.Exception"
+            Break
+        }
+        
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
@@ -145,7 +162,8 @@ function Main {
             Write-Host "Trying to register robot connection as a scheduled job"
             Write-Log -LogPath $LogFile -Message "Trying to register robot connection as a scheduled job" -Severity "Info"
 
-            Write-Host "Username is: $AdminUser"
+            $domainUser = "$AdminDomain\$AdminUser"
+            Write-Host "Domain user is: $domainUser"
             Write-Log -LogPath $LogFile -Message "Username is: $AdminUser" -Severity "Info"
 
             $repeat = (New-TimeSpan -Minutes 5)
@@ -155,13 +173,17 @@ function Main {
                 & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorTenant $orchestratorTenant -RobotKey $robotKey
             }
             $password = $AdminPassword | ConvertTo-SecureString -AsPlainText -Force
-            $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $AdminUser, $password
+            $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $domainUser, $password
             $options = New-ScheduledJobOption -RunElevated
             # Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger # -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
             
+            Write-Host "Connect robot to orchestrator script is located: $connectRoboDownload"
             $triggerAction = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval $repeat -RepetitionDuration ([System.TimeSpan]::MaxValue)
-            $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-ExecutionPolicy Bypass -File $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -OrchestratorUrl $OrchestratorUrl -OrchestratorTenant $OrchestratorTenant" 
-            Register-ScheduledTask -TaskName $jobName -Trigger $triggerAction -Action $action -RunLevel Highest -Force -ErrorAction Stop
+            $powershellArg = "& '$connectRoboDownload' -LogPath '$sLogPath' -LogName '$scheduledTaskScript' -RobotKey '$RobotKey' -OrchestratorUrl '$OrchestratorUrl' -OrchestratorTenant '$OrchestratorTenant'" #-ExecutionPolicy Bypass
+            Write-Host "Powershell arg is: $powershellArg"
+            $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $powershellArg
+            # $action = New-ScheduledTaskAction -Execute powershell.exe -Argument "-ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey"
+            Register-ScheduledTask -TaskName $jobName -Trigger $triggerAction -Action $action -Force -ErrorAction Stop #-User $domainUser -Password $AdminPassword -RunLevel Highest
         }
         Catch {
             Write-Host "Scheduling the connection job failed, reason: $_.Exception"
