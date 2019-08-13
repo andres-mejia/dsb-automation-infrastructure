@@ -108,18 +108,18 @@ function Download-File {
 }    
 
 
-function Wait-ForService($servicesName, $serviceStatus) {
+function Wait-ForService($servicesName, $serviceStatus, $timeLength) {
   # Get all services where DisplayName matches $serviceName and loop through each of them.
-  foreach($service in (Get-Service -DisplayName $servicesName))
+  foreach($service in (Get-Service -DisplayName "$servicesName"))
   {
-      if($serviceStatus -eq 'Running') {
+      if($serviceStatus -eq "Running") {
         Start-Service $service.Name
       }
       if($serviceStatus -eq "Stopped" ) {
         Stop-Service $service.Name
       }
       # Wait for the service to reach the $serviceStatus or a maximum of specified time
-      $service.WaitForStatus($serviceStatus, '00:01:20')
+      $service.WaitForStatus($serviceStatus, $timeLength)
  }
 
  return $serviceStatus
@@ -450,6 +450,7 @@ function Install-Filebeat {
 
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
+Export-ModuleMember -Function Wait-ForService
 Export-ModuleMember -Function Format-LogMessage
 Export-ModuleMember -Function Install-Filebeat
 Export-ModuleMember -Function Get-FilebeatZip
