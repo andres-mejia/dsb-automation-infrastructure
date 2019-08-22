@@ -107,6 +107,25 @@ function Download-File {
 
 }    
 
+function Download-String {
+
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$FullLogPath,
+
+        [Parameter(Mandatory=$true)]
+        [string] $Url
+    )
+
+    Write-Host "Attempting to string from url: $Url"
+    Write-Log -LogPath $FullLogPath -Message "Attempting to string from url: $Url" -Severity "Info"
+
+    $wc = New-Object System.Net.WebClient
+    $machineString = $wc.DownloadString($Url)
+
+    return $machineString
+}
 
 function Wait-ForService($servicesName, $serviceStatus, $timeLength) {
   # Get all services where DisplayName matches $serviceName and loop through each of them.
@@ -451,6 +470,8 @@ function Install-Filebeat {
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
 Export-ModuleMember -Function Wait-ForService
+Export-ModuleMember -Function Download-File
+Export-ModuleMember -Function Download-String
 Export-ModuleMember -Function Format-LogMessage
 Export-ModuleMember -Function Install-Filebeat
 Export-ModuleMember -Function Get-FilebeatZip
