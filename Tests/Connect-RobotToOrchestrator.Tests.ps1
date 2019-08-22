@@ -30,6 +30,9 @@ Describe "Connection to Orchestrator script" {
             $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
             
             Mock -Verifiable -CommandName Test-Path -MockWith { return $true }
+            Mock Get-Service {
+                [PSCustomObject]@{Status = "Running"}
+            } -Verifiable
             Mock -Verifiable -CommandName cmd
             Mock -Verifiable -CommandName Download-String -MockWith { return $machineKeyString }
 
@@ -52,10 +55,11 @@ Describe "Connection to Orchestrator script" {
     Context "Machine is added correctly to Orchestrator" {
         It "Does not throw error" {
 
-            Mock -Verifiable -CommandName cmd
+            Mock -Verifiable -CommandName Test-Path -MockWith { return $true }
             Mock Get-Service {
                 [PSCustomObject]@{Status = "Running"}
             } -Verifiable
+            Mock -Verifiable -CommandName cmd
             Mock -Verifiable -CommandName Start-Process
             $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
 
@@ -86,11 +90,12 @@ Describe "Connection to Orchestrator script" {
         It "Does not try to start service if it is running" {
 
             $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
-            
-            Mock -Verifiable -CommandName cmd
+
+            Mock -Verifiable -CommandName Test-Path -MockWith { return $true }
             Mock Get-Service {
                 [PSCustomObject]@{Status = "Running"}
             } -Verifiable
+            Mock -Verifiable -CommandName cmd
             Mock -Verifiable -CommandName Start-Process
 
             Mock -Verifiable -CommandName Download-String -MockWith { return $machineKeyString }
@@ -106,10 +111,11 @@ Describe "Connection to Orchestrator script" {
 
             $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
             
-            Mock -Verifiable -CommandName cmd
+            Mock -Verifiable -CommandName Test-Path -MockWith { return $true }
             Mock Get-Service {
                 [PSCustomObject]@{Status = "Stopped"}
             } -Verifiable
+            Mock -Verifiable -CommandName cmd
             Mock -Verifiable -CommandName Start-Process
 
             Mock -Verifiable -CommandName Download-String -MockWith { return $machineKeyString }
@@ -143,10 +149,12 @@ Describe "Connection to Orchestrator script" {
 
             $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
             $machineConnected = " Orchestrator already connected! (Fault Detail is equal to An ExceptionDetail, likely created by IncludeExceptionDetailInFaults=true, whose value is"
-            Mock -Verifiable -CommandName cmd -MockWith { return $machineConnected }
+            
+            Mock -Verifiable -CommandName Test-Path -MockWith { return $true }
             Mock Get-Service {
                 [PSCustomObject]@{Status = "Stopped"}
             } -Verifiable
+            Mock -Verifiable -CommandName cmd -MockWith { return $machineConnected }
             Mock -Verifiable -CommandName Start-Process
 
             Mock -Verifiable -CommandName Download-String -MockWith { return $machineKeyString }
