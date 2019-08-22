@@ -135,7 +135,7 @@ function Wait-ForService($servicesName, $serviceStatus, $timeLength) {
         Start-Service $service.Name
       }
       if($serviceStatus -eq "Stopped" ) {
-        Stop-Service $service.Name
+        Start-Service $service.Name
       }
       # Wait for the service to reach the $serviceStatus or a maximum of specified time
       $service.WaitForStatus($serviceStatus, $timeLength)
