@@ -118,8 +118,8 @@ function Download-String {
         [string] $Url
     )
 
-    Write-Host "Attempting to string from url: $Url"
-    Write-Log -LogPath $FullLogPath -Message "Attempting to string from url: $Url" -Severity "Info"
+    Write-Host "Attempting to download string from url: $Url"
+    Write-Log -LogPath $FullLogPath -Message "Attempting to download string from url: $Url" -Severity "Info"
 
     $wc = New-Object System.Net.WebClient
     $machineString = $wc.DownloadString($Url)

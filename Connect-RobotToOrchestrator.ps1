@@ -12,10 +12,9 @@ Param (
     [string] $OrchestratorApiUrl,
 
     [Parameter(Mandatory = $true)]
-    [string] $OrchestratorTenant,
-
-    [string] $RobotKey
+    [string] $OrchestratorTenant
 )
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $p = [Environment]::GetEnvironmentVariable("PSModulePath")
 $p += ";C:\Program Files\WindowsPowerShell\Modules\"
@@ -52,8 +51,10 @@ Try {
         }
     }
 
+    Write-Host "RobotKey is null: " ($RobotKey -eq $null)
     If ($RobotKey -eq $null) {
         Throw ('No license key found for machine: $env:computername')
+        Break
     }
 
     Write-Log -LogPath $fullLogPath -Message "License key for $env:computername is: $RobotKey" -Severity 'Info'
@@ -107,7 +108,7 @@ Try {
 }
 Catch {
     if ($_.Exception) {
-        Write-Host "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
+        Write-Host "There was an error connecting the machine to $machinesUrl, exception: $_.Exception"
         Write-Log -LogPath $fullLogPath -Message $_.Exception -Severity 'Error'
         Throw "There was an error connecting the machine to $orchMachines, exception: $_.Exception"
     }

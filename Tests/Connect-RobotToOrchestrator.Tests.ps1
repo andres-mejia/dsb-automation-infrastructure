@@ -16,11 +16,13 @@ Describe "Connection to Orchestrator script" {
     Context "Correct parameters" {
         It "Correctly makes request for machine keys from dev api" {
 
+            $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
+            
             Mock -Verifiable -CommandName Test-Path -MockWith { return $true }
             Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
             Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
             Mock -Verifiable -CommandName cmd
-            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
 
             & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant
 
@@ -37,10 +39,30 @@ Describe "Connection to Orchestrator script" {
             { & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant } | Should -Throw
         }
     }
-    # Throws error if machine key not found
-    Context "Robot exe exists, but service is running" {
-        It "Does not try to start service if it is running" {
+    
+    Context "Machine is added correctly to Orchestrator" {
+        It "Does not throw error" {
 
+            Mock -Verifiable -CommandName cmd
+            Mock Get-Service {
+                [PSCustomObject]@{Status = "Running"}
+            } -Verifiable
+            Mock -Verifiable -CommandName Start-Process
+            $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
+
+            Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
+            Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
+
+            { & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant } | Should -Not -Throw
+        }
+    }
+
+    Context "Machine is not added correctly to Orchestrator" {
+        It "Throws an error" {
+
+            $machineKeyString = "[{`"name`": `"NotThisPC`", `"key`": `"blah-blah`"}]"
+            
             Mock -Verifiable -CommandName cmd
             Mock Get-Service {
                 [PSCustomObject]@{Status = "Running"}
@@ -49,7 +71,26 @@ Describe "Connection to Orchestrator script" {
 
             Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
             Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
-            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
+
+            { & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant } | Should -Throw
+        }
+    }
+
+    Context "Robot exe exists, but service is running" {
+        It "Does not try to start service if it is running" {
+
+            $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
+            
+            Mock -Verifiable -CommandName cmd
+            Mock Get-Service {
+                [PSCustomObject]@{Status = "Running"}
+            } -Verifiable
+            Mock -Verifiable -CommandName Start-Process
+
+            Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
+            Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
 
             & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant
 
@@ -60,6 +101,8 @@ Describe "Connection to Orchestrator script" {
     Context "Robot exe exists, but service is not running" {
         It "Tries starting robot service if it is not running" {
 
+            $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
+            
             Mock -Verifiable -CommandName cmd
             Mock Get-Service {
                 [PSCustomObject]@{Status = "Stopped"}
@@ -68,7 +111,7 @@ Describe "Connection to Orchestrator script" {
 
             Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
             Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
-            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
 
             & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant
 
