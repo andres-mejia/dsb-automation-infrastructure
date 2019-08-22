@@ -118,4 +118,42 @@ Describe "Connection to Orchestrator script" {
             Assert-MockCalled Start-Process -Exactly 1
         }
     }
+
+    Context "Tries to connect robot but is unsuccessful" {
+        It "Throws an error if connection command does not return expected value" {
+
+            $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
+            
+            Mock -Verifiable -CommandName cmd -MockWith { return "failed" }
+            Mock Get-Service {
+                [PSCustomObject]@{Status = "Stopped"}
+            } -Verifiable
+            Mock -Verifiable -CommandName Start-Process
+
+            Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
+            Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
+
+            { & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant } | Should -Throw
+        }
+    }
+
+    Context "Tries to connect robot and is successful" {
+        It "Does not throw error" {
+
+            $machineKeyString = "[{`"name`": `"$env:computername`", `"key`": `"blah-blah`"}]"
+            $machineConnected = " Orchestrator already connected! (Fault Detail is equal to An ExceptionDetail, likely created by IncludeExceptionDetailInFaults=true, whose value is"
+            Mock -Verifiable -CommandName cmd -MockWith { return $machineConnected }
+            Mock Get-Service {
+                [PSCustomObject]@{Status = "Stopped"}
+            } -Verifiable
+            Mock -Verifiable -CommandName Start-Process
+
+            Mock -Verifiable -ModuleName $moduleName -CommandName Write-Log
+            Mock -Verifiable -ModuleName $moduleName -CommandName Wait-ForService
+            Mock -Verifiable -ModuleName $moduleName -CommandName Download-String -MockWith { return $machineKeyString }
+
+            { & $parentDirectory\Connect-RobotToOrchestrator.ps1 -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorApiUrl $orchestratorApiUrl -OrchestratorTenant $myTenant } | Should -Not -Throw
+        }
+    }
 }

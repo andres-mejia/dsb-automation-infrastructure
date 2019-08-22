@@ -53,7 +53,9 @@ Try {
 
     Write-Host "RobotKey is null: " ($RobotKey -eq $null)
     If ($RobotKey -eq $null) {
-        Throw ('No license key found for machine: $env:computername')
+        Write-Log -LogPath $fullLogPath -Message "No license key found for machine: $env:computername" -Severity 'Info'
+        Write-Host "No license key found for machine: $env:computername"
+        Throw "No license key found for machine: $env:computername"
         Break
     }
 
