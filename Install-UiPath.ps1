@@ -124,7 +124,15 @@ function Main {
     Log-Write -LogPath $sLogFile -LineValue "Removing temp directory $($script:tempDirectory)"
     Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 
+
+    Write-Host "Checking robot service now"
+    Log-Write -LogPath $sLogFile -LineValue "Checking robot service now"
+
     $roboService = Get-Service -DisplayName "UiPath Robot"
+    $roboState = $roboService.Status
+    Write-Host "Robo status is: $roboState"
+    Log-Write -LogPath $sLogFile -LineValue "Robo status is: $roboState"
+
     if ($roboService.Status -eq "Stopped" ) {
       Write-Host "Robot service was stopped, starting and waiting for it now"
       Log-Write -LogPath $sLogFile -LineValue "Robot service was stopped, starting and waiting for it now"
