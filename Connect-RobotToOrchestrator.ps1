@@ -16,12 +16,6 @@ Param (
 )
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$p = [Environment]::GetEnvironmentVariable("PSModulePath")
-$p += ";C:\Program Files\WindowsPowerShell\Modules\"
-[Environment]::SetEnvironmentVariable("PSModulePath", $p)
-
-Import-Module Dsb.RobotOrchestration
-
 $fullLogPath = Join-Path -Path $LogPath -ChildPath $LogName
 Start-Log -LogPath $LogPath -LogName $LogName
 
