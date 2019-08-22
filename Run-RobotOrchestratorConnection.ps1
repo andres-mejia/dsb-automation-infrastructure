@@ -5,10 +5,10 @@
         [string] $FilebeatVersion,
 
         [Parameter(Mandatory = $true)]
-        [string] $RobotKey,
+        [string] $OrchestratorUrl,
 
         [Parameter(Mandatory = $true)]
-        [string] $OrchestratorUrl,
+        [string] $OrchestratorApiUrl,
 
         [Parameter(Mandatory = $true)]
         [string] $OrchestratorTenant,
@@ -150,7 +150,7 @@ function Main {
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -RobotKey $RobotKey -OrchestratorUrl $OrchestratorUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop
+            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
@@ -159,50 +159,6 @@ function Main {
             Break
         }
         
-        Try {
-            Write-Host "Trying to register robot connection as a scheduled job"
-            Write-Log -LogPath $LogFile -Message "Trying to register robot connection as a scheduled job" -Severity "Info"
-
-            $domainUser = "$AdminDomain\$AdminUser"
-            Write-Host "Domain user is: $domainUser"
-            Write-Log -LogPath $LogFile -Message "Username is: $AdminUser" -Severity "Info"
-
-            $repeat = (New-TimeSpan -Minutes 5)
-            $trigger = New-JobTrigger -Once -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat
-            $invokeScriptContent = {   
-                param($scriptPath, $logPath, $logName, $orchestratorUrl, $orchestratorTenant, $robotKey)
-                & $scriptPath -LogPath $logPath -LogName $logName -OrchestratorUrl $orchestratorUrl -OrchestratorTenant $orchestratorTenant -RobotKey $robotKey
-            }
-            $password = $AdminPassword | ConvertTo-SecureString -AsPlainText -Force
-            $credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $domainUser, $password
-            $options = New-ScheduledJobOption -RunElevated
-            # Register-ScheduledJob -Name $jobName -ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey -Trigger $trigger # -ScheduledJobOption $options -Credential $credential -ErrorAction Stop
-            
-            Write-Host "Connect robot to orchestrator script is located: $connectRoboDownload"
-            $triggerAction = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval $repeat -RepetitionDuration ([System.TimeSpan]::MaxValue)
-            $powershellArg = "& '$connectRoboDownload' -LogPath '$sLogPath' -LogName '$scheduledTaskScript' -RobotKey '$RobotKey' -OrchestratorUrl '$OrchestratorUrl' -OrchestratorTenant '$OrchestratorTenant'" #-ExecutionPolicy Bypass
-            Write-Host "Powershell arg is: $powershellArg"
-            $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $powershellArg
-            # $action = New-ScheduledTaskAction -Execute powershell.exe -Argument "-ScriptBlock $invokeScriptContent -ArgumentList $connectRoboDownload,$sLogPath,$scheduledTaskScript,$OrchestratorUrl,$OrchestratorTenant,$RobotKey"
-            Register-ScheduledTask -TaskName $jobName -Trigger $triggerAction -Action $action -Force -ErrorAction Stop #-User $domainUser -Password $AdminPassword -RunLevel Highest
-        }
-        Catch {
-            Write-Host "Scheduling the connection job failed, reason: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "Scheduling the connection job failed, reason: $_.Exception" -Severity "Error"
-        }
-
-        Write-Host "Attempting to retrieve the scheduled job just created."
-        Write-Log -LogPath $LogFile -Message "Attempting to retrieve the scheduled job just created." -Severity "Info"
-        Try {
-            $retrievedScheduledTask = Get-ScheduledTask $jobName -ErrorAction Stop
-            Start-ScheduledTask -TaskName $jobName -ErrorAction Stop            
-            Write-Host "Creating scheduled job did not throw error."
-            Write-Log -LogPath $LogFile -Message "Creating scheduled job did not throw error." -Severity "Info"
-        }
-        Catch {
-            Write-Host "Finding and trying to run the scheduled task raised exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "Finding and trying to run the scheduled task raised exception: $_.Exception" -Severity "Error"
-        }
     }
     End {
         Write-Host "Run-RobotOrchestrationConnection script has finished running. Exiting now"
