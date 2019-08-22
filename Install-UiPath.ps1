@@ -115,7 +115,6 @@ function Main {
             Break
         }
 
-        #End Robot installation
     } else {
       Write-Host "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
       Log-Write -LogPath $sLogFile -LineValue "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
@@ -124,10 +123,17 @@ function Main {
     Write-Host "Removing temp directory $($script:tempDirectory)"
     Log-Write -LogPath $sLogFile -LineValue "Removing temp directory $($script:tempDirectory)"
     Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+
+    $roboService = Get-Service -DisplayName "UiPath Robot"
+    if ($roboService.Status -eq "Stopped" ) {
+      Write-Host "Robot service was stopped, starting and waiting for it now"
+      Log-Write -LogPath $sLogFile -LineValue "Robot service was stopped, starting and waiting for it now"
+      Start-Service $roboService.Name
+    }
+    # Wait for the service to reach the $serviceStatus or a maximum of specified time
+    $robotService.WaitForStatus("Running", $timeLength)
+    
   }
-
-  #Remove temp directory
-
   End {
       If($?){
         Write-Host "Completed Successfully."

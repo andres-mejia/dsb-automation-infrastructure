@@ -131,14 +131,11 @@ function Wait-ForService($servicesName, $serviceStatus, $timeLength) {
   # Get all services where DisplayName matches $serviceName and loop through each of them.
   foreach($service in (Get-Service -DisplayName "$servicesName"))
   {
-      if($serviceStatus -eq "Running") {
-        Start-Service $service.Name
-      }
-      if($serviceStatus -eq "Stopped" ) {
+      if($service.Status -eq "Stopped" ) {
         Start-Service $service.Name
       }
       # Wait for the service to reach the $serviceStatus or a maximum of specified time
-      $service.WaitForStatus($serviceStatus, $timeLength)
+      $service.WaitForStatus("Running", $timeLength)
  }
 
  return $serviceStatus
