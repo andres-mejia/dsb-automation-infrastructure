@@ -1,8 +1,3 @@
-trigger:
-  branches:
-    include:
-    - '*'
-
 variables:
 - name: 'hostedWindowsAgent'
   value: 'vs2017-win2016'
@@ -32,6 +27,7 @@ stages:
         Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
       displayName: Install Nuget and update Pester
     - powershell: |
+        $files = Get-ChildItem $(Build.SourcesDirectory) -File -Recurse -Include *.ps1*
         $result = Invoke-Pester -PassThru -CodeCoverage $(Build.SourcesDirectory)/Dsb.RobotOrchestration.psm1
         if ($result.failedCount -ne 0) { 
             Write-Error "Pester returned errors"
