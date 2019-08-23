@@ -66,7 +66,7 @@ Try {
         Write-Log -LogPath $fullLogPath -Message "Robot service was not running, starting it now." -Severity 'Info'
         Write-Host "Robot service was not running, starting it now."
         Start-Process -FilePath $robotExePath -Wait -Verb runAs -WindowStyle Hidden
-        $waitForRobotSVC = Wait-ForService "UiPath Robot*" "Running" "00:01:20"
+        $waitForRobotSVC = Wait-ForService "UiPath Robot*" "00:01:20"
     }
 
     # if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }

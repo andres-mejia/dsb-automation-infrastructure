@@ -127,7 +127,7 @@ function Download-String {
     return $machineString
 }
 
-function Wait-ForService($servicesName, $serviceStatus, $timeLength) {
+function Wait-ForService($servicesName, $timeLength) {
   # Get all services where DisplayName matches $serviceName and loop through each of them.
   foreach($service in (Get-Service -DisplayName "$servicesName"))
   {
@@ -138,7 +138,7 @@ function Wait-ForService($servicesName, $serviceStatus, $timeLength) {
       $service.WaitForStatus("Running", $timeLength)
  }
 
- return $serviceStatus
+ return $service
 
 }
 

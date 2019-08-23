@@ -138,7 +138,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to install UiPath" -Severity "Info"
         Try {
             & $installRoboDownload -studioVersion 19.4.3 -robotType Nonproduction -ErrorAction Stop
-            Wait-ForService "UiPath Robot*" "Running" "00:01:20"        
+            Wait-ForService "UiPath Robot*" "00:01:20"
         }
         Catch {
             Write-Host "There was an error trying to install UiPath, exception: $_.Exception"
