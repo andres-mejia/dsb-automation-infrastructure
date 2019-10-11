@@ -162,12 +162,15 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to add nuget feed" -Severity "Info"
         
         Try {
+            $NugetFeedUrl = "https://robotics-nuget-server-prod.azurewebsites.net"
             $nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
             $rootPath = "C:"
             $nugetExe = "$rootPath/nuget.exe"
             $wc = New-Object System.Net.WebClient
             $wc.DownloadFile($nugetUrl, $nugetExe)
-            C:\nuget.exe sources Add -Name "Nuget-prod" -Source $NugetFeedUrl
+            Set-Alias nuget $nugetExe -Scope Global -Verbose
+            nuget sources Add -Name "Nuget-prod" -Source $NugetFeedUrl
+            nuget sources Add -Name "Nuget-prod" -Source $NugetFeedUrl -configfile "C:\Program Files (x86)\UiPath\Studio\NuGet.Config"
         }
         Catch {
             Write-Host "There was an error trying add Nuget feed, exception: $_.Exception"
