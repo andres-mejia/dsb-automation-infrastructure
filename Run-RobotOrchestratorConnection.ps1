@@ -162,7 +162,6 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to add nuget feed" -Severity "Info"
         
         Try {
-            $NugetFeedUrl = "https://robotics-nuget-server-prod.azurewebsites.net"
             $nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
             $rootPath = "C:"
             $nugetExe = "$rootPath/nuget.exe"
