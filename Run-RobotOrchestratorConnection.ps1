@@ -15,11 +15,10 @@
 
         [Parameter(Mandatory = $true)]
         [string] $HumioIngestToken,
-        
-        [string] $AdminUser,
-        [string] $AdminPassword,
-        [string] $AdminDomain
-    )
+
+        [Parameter(Mandatory = $true)]
+        [string] $NugetFeedUrl
+)
 
 $script:ErrorActionPreference = "SilentlyContinue"
 $script:sScriptVersion = "1.0"
@@ -156,6 +155,24 @@ function Main {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw "There was an error trying to run robot connection script, exception: $_.Exception"
+            Break
+        }
+
+        Write-Host "Trying to add nuget feed"
+        Write-Log -LogPath $LogFile -Message "Trying to add nuget feed" -Severity "Info"
+        
+        Try {
+            $nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+            $rootPath = "C:"
+            $nugetExe = "$rootPath/nuget.exe"
+            $wc = New-Object System.Net.WebClient
+            $wc.DownloadFile($nugetUrl, $nugetExe)
+            C:\nuget.exe sources Add -Name "Nuget-prod" -Source $NugetFeedUrl
+        }
+        Catch {
+            Write-Host "There was an error trying add Nuget feed, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
+            Throw "There was an error trying add Nuget feed, exception: $_.Exception"
             Break
         }
         
