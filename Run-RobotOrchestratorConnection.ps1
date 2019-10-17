@@ -17,7 +17,16 @@
         [string] $HumioIngestToken,
 
         [Parameter(Mandatory = $true)]
-        [string] $NugetFeedUrl
+        [string] $NugetFeedUrl,
+
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountName,
+
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountKey,
+
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountContainer
 )
 
 $script:ErrorActionPreference = "SilentlyContinue"
@@ -73,6 +82,11 @@ function Main {
         Write-Host "Attempting to download file from from: $connectRobo"
         $script:connectRoboDownload = "$connectRoboPath\Connect-RobotToOrchestrator.ps1"
         $wc.DownloadFile($connectRobo, $connectRoboDownload)        
+
+        $sendSms = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Get-SendSmsBlob.ps1"
+        Write-Host "Attempting to download file from from: $sendSms"
+        $script:getSendSmsBlob = "$connectRoboPath\Get-SendSmsBlob.ps1"
+        $wc.DownloadFile($sendSms, $getSendSmsBlob)       
 
         $p = [Environment]::GetEnvironmentVariable("PSModulePath")
         $p += ";C:\Program Files\WindowsPowerShell\Modules\"
@@ -176,6 +190,13 @@ function Main {
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
             Throw "There was an error trying add Nuget feed, exception: $_.Exception"
             Break
+        }
+
+        Try {
+            & $getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
+        }
+        Catch {
+            
         }
         
     }

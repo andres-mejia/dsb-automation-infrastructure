@@ -81,7 +81,7 @@ function Main {
                 Write-Host "Installing UiPath Robot with Studio Feature"
                 Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot with Studio Feature"
                 $msiFeatures = @("DesktopFeature","Robot","Studio","StartupLauncher","RegisterService","Packages")
-        } else {
+        } Else {
                 # log log log
                 Write-Host "Installing UiPath Robot without Studio Feature"
                 Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot without Studio Feature"
@@ -99,7 +99,7 @@ function Main {
                     throw "Could not find installation of UiPath at $installationFolder"
                 }
             }
-            else {
+            Else {
                 $installResult = Install-UiPath -msiPath $msiPath -msiFeatures $msiFeatures
             }
         }
@@ -108,14 +108,14 @@ function Main {
               Write-Host "There was an error installing UiPath: $_.Exception"
               Log-Error -LogPath $sLogFile -ErrorDesc $_.Exception -ExitGracefully $True
             }
-            else {
+            Else {
               Write-Host "There was an error installing UiPath, but the exception was empty"
               Log-Error -LogPath $sLogFile -ErrorDesc "There was an error, but it was blank" -ExitGracefully $True
             }
             Break
         }
 
-    } else {
+    } Else {
       Write-Host "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
       Log-Write -LogPath $sLogFile -LineValue "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
     }
@@ -273,7 +273,7 @@ function Install-UiPath {
           Write-Host "Install-UiPath attempting to install UiPath at path $installationFolder"
           $msiProperties["APPLICATIONFOLDER"] = $installationFolder;
       }
-      else {
+      Else {
           Write-Host "Installing UiPath at default path"
       }
 
