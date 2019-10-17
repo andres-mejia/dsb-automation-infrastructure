@@ -7,7 +7,9 @@
         [string] $StorageAccountKey,
 
         [Parameter(Mandatory = $true)]
-        [string] $StorageAccountContainer
+        [string] $StorageAccountContainer,
+
+        [System.Version] $azureRmVersion = "6.13.1"
     )
 
 $ErrorActionPreference = "Stop"
@@ -22,6 +24,9 @@ $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
 $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
+
+$azureRMModuleLocationBaseDir = 'C:\Modules\azurerm_6.7.0'
+$azureRMModuleLocation = "$azureRMModuleLocationBaseDir\AzureRM\6.7.0\AzureRM.psd1"
 
 $sendSmsDirectory = "PR_SMS_UDSENDELSE"
 $sendSmsCDrive = "C:/$sendSmsDirectory"
@@ -78,4 +83,21 @@ If(!(Test-Path -Path $sendSmsCDrive)){
     Write-Host "$sendSmsDirectory existed, exiting now"
     Write-Log -LogPath $LogFile -Message "$sendSmsDirectory existed, exiting now" -Severity "Info"
 
+}
+
+function Import-AzureRmModuleFromLocalMachine  {
+    
+    if ((Get-Module AzureRM)) {
+        Write-Host "Unloading AzureRM module ... "
+        Remove-Module AzureRM
+    }
+    
+    Write-Host "Importing module $azureRMModuleLocation"
+    $env:PSModulePath = $azureRMModuleLocationBaseDir + ";" + $env:PSModulePath
+
+    $currentVerbosityPreference = $Global:VerbosePreference
+
+    $Global:VerbosePreference = 'SilentlyContinue'
+    Import-Module $azureRMModuleLocation -Verbose:$false
+    $Global:VerbosePreference = $currentVerbosityPreference
 }
