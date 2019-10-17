@@ -174,7 +174,6 @@ function Main {
 
         Write-Host "Trying to add nuget feed"
         Write-Log -LogPath $LogFile -Message "Trying to add nuget feed" -Severity "Info"
-        
         Try {
             $nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
             $rootPath = "C:"
@@ -192,11 +191,16 @@ function Main {
             Break
         }
 
+        Write-Host "Trying to retrieve SendSms"
+        Write-Log -LogPath $LogFile -Message "Trying to retrieve SendSms" -Severity "Info"
         Try {
-            & $getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
+            & $getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
         }
         Catch {
-            
+            Write-Host "There was an error retrieving SendSms, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
+            Throw "There was an error retrieving SendSms, exception: $_.Exception"
+            Break
         }
         
     }
