@@ -7,9 +7,7 @@
         [string] $StorageAccountKey,
 
         [Parameter(Mandatory = $true)]
-        [string] $StorageAccountContainer,
-
-        [System.Version] $azureRmVersion = "6.13.1"
+        [string] $StorageAccountContainer
     )
 
 $ErrorActionPreference = "Stop"
@@ -18,15 +16,14 @@ $sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
 $sDebug = $true
 #Log File Info
-$LogPath = "C:\Program Files\AutomationAzureOrchestration"
+$LogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $LogName = "Retrieve-SendSms-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
 $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
-$azureRMModuleLocationBaseDir = 'C:\Modules\azurerm_6.7.0'
-$azureRMModuleLocation = "$azureRMModuleLocationBaseDir\AzureRM\6.7.0\AzureRM.psd1"
+[System.Version] $azureRmVersion = "6.13.1"
 
 $sendSmsDirectory = "PR_SMS_UDSENDELSE"
 $sendSmsCDrive = "C:/$sendSmsDirectory"
@@ -42,20 +39,31 @@ If(!(Test-Path -Path $sendSmsCDrive)){
     Write-Host "No $sendSmsDirectory existed, downloading it now"
     Write-Log -LogPath $LogFile -Message "No $sendSmsDirectory existed, downloading it now" -Severity "Info"
 
-    If (Test-Path 'C:\Modules\azurerm_6.7.0\AzureRM\6.7.0\AzureRM.psd1') {
-        Import-AzureRmModuleFromLocalMachine
-    } Else {
-        $azModules = (Get-Module AzureRM -ListAvailable -Verbose:$false | Where-Object {$_.Version.Major -ge $azureRmVersion.Major})
-        If ($azModules) {
-            Write-Host "AzureRM module version $($azureRmVersion.Major) or greater is already installed. Importing module ..."
-            Write-Log -LogPath $LogFile -Message "AzureRM module version $($azureRmVersion.Major) or greater is already installed. Importing module ..." -Severity "Info"
+    Try {
+        Write-Host "Checking for local AzureRm Powershell version: $azureRmVersion"
+        Write-Log -LogPath $LogFile -Message "Checking for local AzureRm Powershell version: $azureRmVersion" -Severity "Info"
 
+        If (Test-Path 'C:\Modules\azurerm_$azureRmVersion\AzureRM\$azureRmVersion\AzureRM.psd1') {
+            Write-Host "Local AzureRm module found, version: $azureRmVersion. Trying to import now"
+            Write-Log -LogPath $LogFile -Message "Local AzureRm module found, version: $azureRmVersion. Trying to import now" -Severity "Info"
+            Import-AzureRmModuleFromLocalMachine
         } Else {
-            Write-Host "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -ForegroundColor Yellow
-            Write-Log -LogPath $LogFile -Message "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -Severity "Info"
-            Install-Module AzureRM -RequiredVersion $azureRmVersion -Force -AllowClobber
+            $azModules = (Get-Module AzureRM -ListAvailable -Verbose:$false | Where-Object {$_.Version.Major -ge $azureRmVersion.Major})
+            If ($azModules) {
+                Write-Host "AzureRM module version $($azureRmVersion.Major) or greater is already installed. Importing module ..."
+                Write-Log -LogPath $LogFile -Message "AzureRM module version $($azureRmVersion.Major) or greater is already installed. Importing module ..." -Severity "Info"
+
+            } Else {
+                Write-Host "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -ForegroundColor Yellow
+                Write-Log -LogPath $LogFile -Message "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -Severity "Info"
+                Install-Module AzureRM -RequiredVersion $azureRmVersion -Force -AllowClobber
+            }
+            Import-Module AzureRM -Verbose:$false
         }
-        Import-Module AzureRM -Verbose:$false
+    }
+    Catch {
+        Write-Host "There was an error importing or installing AzureRm module: $_.Exception.Message"
+        Throw "There was an error importing or installing AzureRm module: $_.Exception.Message"
     }
 
     Try {
@@ -64,7 +72,7 @@ If(!(Test-Path -Path $sendSmsCDrive)){
         $context = New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
 
         Write-Host "Getting blob at $sendSmsZip"
-        Write-Log -LogPath $LogFile -Message "Getting blob at $sendSmsZip" -Severity "Info"
+        Write-Log -LogPath $LogFile -Message "Getting blob at $sendSmsZip from container $StorageAccountContainer" -Severity "Info"
         Get-AzureStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$script:tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
 
         Write-Host "Expanding $script:tempDirectory/$sendSmsZip to C drive"
@@ -76,8 +84,8 @@ If(!(Test-Path -Path $sendSmsCDrive)){
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
     }
     Catch {
-        Write-Host "There was an error retrieving SendSMS"
-        Throw "There was an error retrieving SendSMS"
+        Write-Host "There was an error retrieving SendSMS: $_.Exception.Message"
+        Throw "There was an error retrieving SendSMS: $_.Exception.Message"
     }
 } Else {
     Write-Host "$sendSmsDirectory existed, exiting now"
@@ -87,6 +95,9 @@ If(!(Test-Path -Path $sendSmsCDrive)){
 
 function Import-AzureRmModuleFromLocalMachine  {
     
+    $azureRMModuleLocationBaseDir = 'C:\Modules\azurerm_6.7.0'
+    $azureRMModuleLocation = "$azureRMModuleLocationBaseDir\AzureRM\6.7.0\AzureRM.psd1"
+
     if ((Get-Module AzureRM)) {
         Write-Host "Unloading AzureRM module ... "
         Remove-Module AzureRM
