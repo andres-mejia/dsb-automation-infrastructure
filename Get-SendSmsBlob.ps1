@@ -24,7 +24,15 @@ $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhm
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
 [System.Version] $azureRmVersion = "6.13.1"
-$azureRmModuleScript = "C:\Program Files (x86)\WindowsPowerShell\Modules\AzureRM\$azureRmVersion\AzureRM.psd1"
+$powershellModuleDir = "C:\Program Files (x86)\WindowsPowerShell\Modules"
+If (!(Test-Path -Path $powershellModuleDir)) {
+    New-Item -ItemType Directory -Force -Path $powershellModuleDir
+}
+$azureRmModuleScript = "$powershellModuleDir\AzureRM\$azureRmVersion\AzureRM.psd1"
+
+$p = [Environment]::GetEnvironmentVariable("PSModulePath")
+$p += ";$powershellModuleDir\"
+[Environment]::SetEnvironmentVariable("PSModulePath", $p)
 
 $sendSmsDirectory = "PR_SMS_UDSENDELSE"
 $sendSmsCDrive = "C:/$sendSmsDirectory"
@@ -35,7 +43,6 @@ Write-Host "Checking if $sendSmsDirectory exists"
 Write-Log -LogPath $LogFile -Message "Checking if $sendSmsDirectory exists" -Severity "Info"
 
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 If (!(Test-Path -Path $sendSmsCDrive)) {
 
@@ -56,17 +63,11 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
                 Write-Log -LogPath $LogFile -Message "Unloading AzureRM module ..." -Severity "Info"
                 Remove-Module AzureRM
             }
-    
-            Write-Host "Importing module $azureRmModuleScript"
-            Write-Log -LogPath $LogFile -Message "Importing module $azureRmModuleScript" -Severity "Info"
-            $env:PSModulePath = $azureRmModuleScript + ";" + $env:PSModulePath
-
-            $currentVerbosityPreference = $Global:VerbosePreference
-
-            $Global:VerbosePreference = 'SilentlyContinue'
-            $Global:VerbosePreference = $currentVerbosityPreference
 
         } Else {
+            Write-Host "Local AzureRm module not found, trying to download and install now."
+            Write-Log -LogPath $LogFile -Message "Local AzureRm module not found, trying to download and install now." -Severity "Info"
+
             $azureRmMsi = "https://github.com/Azure/azure-powershell/releases/download/v6.13.1-November2018/Azure-Cmdlets-6.13.1.24243-x86.msi"
             $downloadedAzureRmMsi = "$script:tempDirectory/Azure-Cmdlets-6.13.1.24243-x86.msi"
             Write-Host "Attempting to download file from from: $azureRmMsi to path $downloadedAzureRmMsi"
@@ -79,8 +80,13 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Write-Log -LogPath $LogFile -Message "Attempting to install AzureRm from MSI" -Severity "Info"
             Start-Process msiexec.exe -Wait -ArgumentList "/I $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
         }
-        Write-Host "Trying to import AzureRm module"
-        Write-Log -LogPath $LogFile -Message "Trying to import AzureRm module" -Severity "Info"    
+        Write-Host "Importing module $azureRmModuleScript"
+        Write-Log -LogPath $LogFile -Message "Importing module $azureRmModuleScript" -Severity "Info"
+
+        $currentVerbosityPreference = $Global:VerbosePreference
+
+        $Global:VerbosePreference = 'SilentlyContinue'
+        $Global:VerbosePreference = $currentVerbosityPreference
 
         Import-Module $azureRmModuleScript -Verbose:$false
     }
@@ -94,6 +100,7 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
         Write-Log -LogPath $LogFile -Message "Adding storage context for $StorageAccountName" -Severity "Info"
         $context = New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
 
+        write-host $context
         Write-Host "Getting blob at $sendSmsZip"
         Write-Log -LogPath $LogFile -Message "Getting blob at $sendSmsZip from container $StorageAccountContainer" -Severity "Info"
         Get-AzureStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$script:tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
