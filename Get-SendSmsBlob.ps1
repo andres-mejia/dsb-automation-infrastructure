@@ -47,8 +47,12 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
     Try  {
-        If (!(Get-PackageProvider NuGet)) { 
-            Install-PackageProvider Nuget -ForceBootstrap -Force
+        Write-Host "Checking for NuGet Package"
+        Write-Log -LogPath $LogFile -Message "Checking for NuGet Package" -Severity "Info"
+        If (!(Get-PackageProvider NuGet)) {
+            Write-Host "No NuGet package found, trying to install now"
+            Write-Log -LogPath $LogFile -Message "No NuGet package found, trying to install now" -Severity "Info"
+            # Install-PackageProvider Nuget -ForceBootstrap -Force
         }
     }
     Catch {
@@ -57,21 +61,21 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
         Throw "There was an error installing NuGet: $_.Exception.Message"        
     }
 
-    Try {
-        Register-PSRepository -Default -InstallationPolicy Trusted 
-        Find-PackageProvider -Name "Nuget" -ForceBootstrap -IncludeDependencies -Source "PSGallery" -Force    
-    }
-    Catch {
-        If ($_.Exception.Message -like "Module Repository 'PSGallery' exists*") {
-            Write-Host "PSGallery already added as a source"
-            Write-Log -LogPath $LogFile -Message "PSGallery already added as a source" -Severity "Info"
-        }
-        Else {
-            Write-Host "There was an error registering PSGallery: $_.Exception.Message"
-            Write-Log -LogPath $LogFile -Message "There was an error registering PSGallery: $_.Exception.Message" -Severity "Error"
-            Throw "There was an error registering PSGallery: $_.Exception.Message"
-        }
-    }
+    # Try {
+    #     Register-PSRepository -Default -InstallationPolicy Trusted 
+    #     Find-PackageProvider -Name "Nuget" -ForceBootstrap -IncludeDependencies -Source "PSGallery" -Force    
+    # }
+    # Catch {
+    #     If ($_.Exception.Message -like "Module Repository 'PSGallery' exists*") {
+    #         Write-Host "PSGallery already added as a source"
+    #         Write-Log -LogPath $LogFile -Message "PSGallery already added as a source" -Severity "Info"
+    #     }
+    #     Else {
+    #         Write-Host "There was an error registering PSGallery: $_.Exception.Message"
+    #         Write-Log -LogPath $LogFile -Message "There was an error registering PSGallery: $_.Exception.Message" -Severity "Error"
+    #         Throw "There was an error registering PSGallery: $_.Exception.Message"
+    #     }
+    # }
 
     Try {
         Write-Host "Checking for local AzureRm Powershell version: $azureRmVersion"
