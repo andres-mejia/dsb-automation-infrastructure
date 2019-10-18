@@ -42,7 +42,7 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
     Write-Host "Listing all sources"
     Write-Log -LogPath $LogFile -Message "Listing all sources" -Severity "Info"
     $sources = Get-PackageSource
-    $sources | ForEach-Object { $source = ($_ | Format-List | Out-String -NoNewline); Write-Host $source ; Write-Log -LogPath $LogFile -Message $source -Severity "Info" }
+    $sources | ForEach-Object { $source = ($_ | Format-List | Out-String); Write-Host $source ; Write-Log -LogPath $LogFile -Message $source -Severity "Info" }
 
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
