@@ -10,7 +10,7 @@ Param (
     [string] $StorageAccountContainer
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "SilentlyContinue"
 #Script Version
 $sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
@@ -39,6 +39,11 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
     Write-Host "No $sendSmsDirectory existed, downloading it now"
     Write-Log -LogPath $LogFile -Message "No $sendSmsDirectory existed, downloading it now" -Severity "Info"
 
+    Write-Host "Listing all sources"
+    Write-Log -LogPath $LogFile -Message "Listing all sources" -Severity "Info"
+    $sources = Get-PackageSource
+    $sources | ForEach-Object { $source = ($_ | Format-List | Out-String -NoNewline); Write-Host $source ; Write-Log -LogPath $LogFile -Message $source -Severity "Info" }
+
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
     Try  {
@@ -47,9 +52,9 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
         }
     }
     Catch {
-        Write-Host "There was an error installing NuGet"
-        Write-Log -LogPath $LogFile -Message "There was an error installing NuGet" -Severity "Error"
-        Throw "There was an error installing NuGet"        
+        Write-Host "There was an error installing NuGet: $_.Exception.Message"
+        Write-Log -LogPath $LogFile -Message "There was an error installing NuGet: $_.Exception.Message" -Severity "Error"
+        Throw "There was an error installing NuGet: $_.Exception.Message"        
     }
 
     Try {
