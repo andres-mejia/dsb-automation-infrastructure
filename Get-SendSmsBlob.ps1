@@ -41,10 +41,20 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
 
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
-    Find-PackageProvider -Name 'Nuget' -ForceBootstrap -IncludeDependencies -Force    
-    
+    Try  {
+        If (!(Get-PackageProvider NuGet)) { 
+            Install-PackageProvider Nuget -ForceBootstrap -Force
+        }
+    }
+    Catch {
+        Write-Host "There was an error installing NuGet"
+        Write-Log -LogPath $LogFile -Message "There was an error installing NuGet" -Severity "Error"
+        Throw "There was an error installing NuGet"        
+    }
+
     Try {
         Register-PSRepository -Default -InstallationPolicy Trusted 
+        Find-PackageProvider -Name "Nuget" -ForceBootstrap -IncludeDependencies -Source "PSGallery" -Force    
     }
     Catch {
         If ($_.Exception.Message -like "Module Repository 'PSGallery' exists*") {
