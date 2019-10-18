@@ -56,7 +56,7 @@ If(!(Test-Path -Path $sendSmsCDrive)){
             } Else {
                 Write-Host "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -ForegroundColor Yellow
                 Write-Log -LogPath $LogFile -Message "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -Severity "Info"
-                Install-Module AzureRM -RequiredVersion $azureRmVersion -Force -AllowClobber
+                Install-Module AzureRM -Confirm:$False -RequiredVersion $azureRmVersion -Force -AllowClobber -Scope CurrentUser
             }
             Import-Module AzureRM -Verbose:$false
         }
