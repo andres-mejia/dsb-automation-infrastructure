@@ -44,8 +44,14 @@ If(!(Test-Path -Path $sendSmsCDrive)){
         Write-Log -LogPath $LogFile -Message "Checking for local AzureRm Powershell version: $azureRmVersion" -Severity "Info"
 
         If (Test-Path 'C:\Modules\azurerm_$azureRmVersion\AzureRM\$azureRmVersion\AzureRM.psd1') {
+
             Write-Host "Local AzureRm module found, version: $azureRmVersion. Trying to import now"
             Write-Log -LogPath $LogFile -Message "Local AzureRm module found, version: $azureRmVersion. Trying to import now" -Severity "Info"
+
+            Write-Host "Installing NuGet necessary to install Azure Packages"
+            Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+
             Import-AzureRmModuleFromLocalMachine
         } Else {
             $azModules = (Get-Module AzureRM -ListAvailable -Verbose:$false | Where-Object {$_.Version.Major -ge $azureRmVersion.Major})
