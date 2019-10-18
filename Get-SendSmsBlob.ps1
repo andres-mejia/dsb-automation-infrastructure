@@ -1,14 +1,14 @@
 [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory = $true)]
-        [string] $StorageAccountName,
-        
-        [Parameter(Mandatory = $true)]
-        [string] $StorageAccountKey,
+Param (
+    [Parameter(Mandatory = $true)]
+    [string] $StorageAccountName,
+    
+    [Parameter(Mandatory = $true)]
+    [string] $StorageAccountKey,
 
-        [Parameter(Mandatory = $true)]
-        [string] $StorageAccountContainer
-    )
+    [Parameter(Mandatory = $true)]
+    [string] $StorageAccountContainer
+)
 
 $ErrorActionPreference = "Stop"
 #Script Version
@@ -34,14 +34,27 @@ Write-Host "Checking if $sendSmsDirectory exists"
 Write-Log -LogPath $LogFile -Message "Checking if $sendSmsDirectory exists" -Severity "Info"
 
 
-If(!(Test-Path -Path $sendSmsCDrive)){
+If (!(Test-Path -Path $sendSmsCDrive)) {
 
     Write-Host "No $sendSmsDirectory existed, downloading it now"
     Write-Log -LogPath $LogFile -Message "No $sendSmsDirectory existed, downloading it now" -Severity "Info"
 
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
-    Register-PSRepository -Name "PSGallery" –SourceLocation "https://www.powershellgallery.com/api/v2/" -InstallationPolicy Trusted
+    Try {
+        Register-PSRepository -Default -InstallationPolicy Trusted 
+    }
+    Catch {
+        If ($_.Exception.Message -like "Module Repository 'PSGallery' exists*") {
+            Write-Host "PSGallery already added as a source"
+            Write-Log -LogPath $LogFile -Message "PSGallery already added as a source" -Severity "Info"
+        }
+        Else {
+            Write-Host "There was an error registering PSGallery: $_.Exception.Message"
+            Write-Log -LogPath $LogFile -Message "There was an error registering PSGallery: $_.Exception.Message" -Severity "Error"
+            Throw "There was an error registering PSGallery: $_.Exception.Message"
+        }
+    }
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 
     Try {
@@ -96,7 +109,6 @@ If(!(Test-Path -Path $sendSmsCDrive)){
 } Else {
     Write-Host "$sendSmsDirectory existed, exiting now"
     Write-Log -LogPath $LogFile -Message "$sendSmsDirectory existed, exiting now" -Severity "Info"
-
 }
 
 function Import-AzureRmModuleFromLocalMachine  {
