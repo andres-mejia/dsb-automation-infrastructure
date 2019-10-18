@@ -41,6 +41,8 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
 
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
+    Find-PackageProvider -Name 'Nuget' -ForceBootstrap -IncludeDependencies -Force    
+    
     Try {
         Register-PSRepository -Default -InstallationPolicy Trusted 
     }
@@ -55,7 +57,6 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Throw "There was an error registering PSGallery: $_.Exception.Message"
         }
     }
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 
     Try {
         Write-Host "Checking for local AzureRm Powershell version: $azureRmVersion"
