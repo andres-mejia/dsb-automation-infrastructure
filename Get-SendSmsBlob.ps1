@@ -24,6 +24,7 @@ $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhm
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
 [System.Version] $azureRmVersion = "6.13.1"
+$azureRmModuleScript = "C:\Program Files (x86)\WindowsPowerShell\Modules\AzureRM\$azureRmVersion\AzureRM.psd1"
 
 $sendSmsDirectory = "PR_SMS_UDSENDELSE"
 $sendSmsCDrive = "C:/$sendSmsDirectory"
@@ -33,71 +34,55 @@ Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
 Write-Host "Checking if $sendSmsDirectory exists"
 Write-Log -LogPath $LogFile -Message "Checking if $sendSmsDirectory exists" -Severity "Info"
 
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 If (!(Test-Path -Path $sendSmsCDrive)) {
 
     Write-Host "No $sendSmsDirectory existed, downloading it now"
     Write-Log -LogPath $LogFile -Message "No $sendSmsDirectory existed, downloading it now" -Severity "Info"
 
-    Write-Host "Listing all sources"
-    Write-Log -LogPath $LogFile -Message "Listing all sources" -Severity "Info"
-    $sources = Get-PackageSource
-    $sources | ForEach-Object { $source = ($_ | Format-List | Out-String); Write-Host $source ; Write-Log -LogPath $LogFile -Message $source -Severity "Info" }
-
-    Write-Host "Installing NuGet necessary to install Azure Packages"
-    Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
-    Try  {
-        Write-Host "Checking for NuGet Package"
-        Write-Log -LogPath $LogFile -Message "Checking for NuGet Package" -Severity "Info"
-        If (!(Get-PackageProvider NuGet)) {
-            Write-Host "No NuGet package found, trying to install now"
-            Write-Log -LogPath $LogFile -Message "No NuGet package found, trying to install now" -Severity "Info"
-            # Install-PackageProvider Nuget -ForceBootstrap -Force
-        }
-    }
-    Catch {
-        Write-Host "There was an error installing NuGet: $_.Exception.Message"
-        Write-Log -LogPath $LogFile -Message "There was an error installing NuGet: $_.Exception.Message" -Severity "Error"
-        Throw "There was an error installing NuGet: $_.Exception.Message"        
-    }
-
-    # Try {
-    #     Register-PSRepository -Default -InstallationPolicy Trusted 
-    #     Find-PackageProvider -Name "Nuget" -ForceBootstrap -IncludeDependencies -Source "PSGallery" -Force    
-    # }
-    # Catch {
-    #     If ($_.Exception.Message -like "Module Repository 'PSGallery' exists*") {
-    #         Write-Host "PSGallery already added as a source"
-    #         Write-Log -LogPath $LogFile -Message "PSGallery already added as a source" -Severity "Info"
-    #     }
-    #     Else {
-    #         Write-Host "There was an error registering PSGallery: $_.Exception.Message"
-    #         Write-Log -LogPath $LogFile -Message "There was an error registering PSGallery: $_.Exception.Message" -Severity "Error"
-    #         Throw "There was an error registering PSGallery: $_.Exception.Message"
-    #     }
-    # }
-
     Try {
         Write-Host "Checking for local AzureRm Powershell version: $azureRmVersion"
         Write-Log -LogPath $LogFile -Message "Checking for local AzureRm Powershell version: $azureRmVersion" -Severity "Info"
 
-        If (Test-Path 'C:\Modules\azurerm_$azureRmVersion\AzureRM\$azureRmVersion\AzureRM.psd1') {
+        If (Test-Path $azureRmModuleScript) {
 
             Write-Host "Local AzureRm module found, version: $azureRmVersion. Trying to import now"
             Write-Log -LogPath $LogFile -Message "Local AzureRm module found, version: $azureRmVersion. Trying to import now" -Severity "Info"
-            Import-AzureRmModuleFromLocalMachine
-        } Else {
-            $azModules = (Get-Module AzureRM -ListAvailable -Verbose:$false | Where-Object {$_.Version.Major -ge $azureRmVersion.Major})
-            If ($azModules) {
-                Write-Host "AzureRM module version $($azureRmVersion.Major) or greater is already installed. Importing module ..."
-                Write-Log -LogPath $LogFile -Message "AzureRM module version $($azureRmVersion.Major) or greater is already installed. Importing module ..." -Severity "Info"
 
-            } Else {
-                Write-Host "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -ForegroundColor Yellow
-                Write-Log -LogPath $LogFile -Message "AzureRM module version $azureRmVersion or later not found. Installing AzureRM $azureRmVersion" -Severity "Info"
-                Install-Module AzureRM -Confirm:$False -RequiredVersion $azureRmVersion -Force -AllowClobber -Scope CurrentUser
+            if ((Get-Module AzureRM)) {
+                Write-Host "Unloading AzureRM module ... "
+                Write-Log -LogPath $LogFile -Message "Unloading AzureRM module ..." -Severity "Info"
+                Remove-Module AzureRM
             }
-            Import-Module AzureRM -Verbose:$false
+    
+            Write-Host "Importing module $azureRmModuleScript"
+            Write-Log -LogPath $LogFile -Message "Importing module $azureRmModuleScript" -Severity "Info"
+            $env:PSModulePath = $azureRmModuleScript + ";" + $env:PSModulePath
+
+            $currentVerbosityPreference = $Global:VerbosePreference
+
+            $Global:VerbosePreference = 'SilentlyContinue'
+            Import-Module $azureRmModuleScript -Verbose:$false
+            $Global:VerbosePreference = $currentVerbosityPreference
+
+        } Else {
+            $azureRmMsi = "https://github.com/Azure/azure-powershell/releases/download/v6.13.1-November2018/Azure-Cmdlets-6.13.1.24243-x86.msi"
+            $downloadedAzureRmMsi = "$script:tempDirectory/Azure-Cmdlets-6.13.1.24243-x86.msi"
+            Write-Host "Attempting to download file from from: $azureRmMsi to path $downloadedAzureRmMsi"
+            Write-Log -LogPath $LogFile -Message "Attempting to download file from from: $azureRmMsi to path $downloadedAzureRmMsi" -Severity "Info"
+
+            $wc = New-Object System.Net.WebClient
+            $wc.DownloadFile($azureRmMsi, $downloadedAzureRmMsi)
+
+            Write-Host "Attempting to install AzureRm from MSI"
+            Write-Log -LogPath $LogFile -Message "Attempting to install AzureRm from MSI" -Severity "Info"
+            Start-Process msiexec.exe -Wait -ArgumentList "/I $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
+            
+            Write-Host "Trying to import AzureRm module"
+            Write-Log -LogPath $LogFile -Message "Trying to import AzureRm module" -Severity "Info"    
+            Import-Module AzureRM -Verbose:$false -ErrorAction Stop
         }
     }
     Catch {
@@ -129,24 +114,4 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
 } Else {
     Write-Host "$sendSmsDirectory existed, exiting now"
     Write-Log -LogPath $LogFile -Message "$sendSmsDirectory existed, exiting now" -Severity "Info"
-}
-
-function Import-AzureRmModuleFromLocalMachine  {
-    
-    $azureRMModuleLocationBaseDir = 'C:\Modules\azurerm_6.7.0'
-    $azureRMModuleLocation = "$azureRMModuleLocationBaseDir\AzureRM\6.7.0\AzureRM.psd1"
-
-    if ((Get-Module AzureRM)) {
-        Write-Host "Unloading AzureRM module ... "
-        Remove-Module AzureRM
-    }
-    
-    Write-Host "Importing module $azureRMModuleLocation"
-    $env:PSModulePath = $azureRMModuleLocationBaseDir + ";" + $env:PSModulePath
-
-    $currentVerbosityPreference = $Global:VerbosePreference
-
-    $Global:VerbosePreference = 'SilentlyContinue'
-    Import-Module $azureRMModuleLocation -Verbose:$false
-    $Global:VerbosePreference = $currentVerbosityPreference
 }
