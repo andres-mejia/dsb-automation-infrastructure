@@ -24,7 +24,7 @@ $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhm
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
 [System.Version] $azureRmVersion = "6.13.1"
-$powershellModuleDir = "C:\Program Files\WindowsPowerShell\Modules"
+$powershellModuleDir = "C:\Program Files (x86)\WindowsPowerShell\Modules"
 If (!(Test-Path -Path $powershellModuleDir)) {
     New-Item -ItemType Directory -Force -Path $powershellModuleDir
 }
