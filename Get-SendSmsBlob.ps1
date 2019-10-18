@@ -64,7 +64,6 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             $currentVerbosityPreference = $Global:VerbosePreference
 
             $Global:VerbosePreference = 'SilentlyContinue'
-            Import-Module $azureRmModuleScript -Verbose:$false
             $Global:VerbosePreference = $currentVerbosityPreference
 
         } Else {
@@ -79,11 +78,11 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Write-Host "Attempting to install AzureRm from MSI"
             Write-Log -LogPath $LogFile -Message "Attempting to install AzureRm from MSI" -Severity "Info"
             Start-Process msiexec.exe -Wait -ArgumentList "/I $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
-            
-            Write-Host "Trying to import AzureRm module"
-            Write-Log -LogPath $LogFile -Message "Trying to import AzureRm module" -Severity "Info"    
-            Import-Module AzureRM -Verbose:$false -ErrorAction Stop
         }
+        Write-Host "Trying to import AzureRm module"
+        Write-Log -LogPath $LogFile -Message "Trying to import AzureRm module" -Severity "Info"    
+
+        Import-Module $azureRmModuleScript -Verbose:$false
     }
     Catch {
         Write-Host "There was an error importing or installing AzureRm module: $_.Exception.Message"
