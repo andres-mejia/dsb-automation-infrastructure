@@ -30,7 +30,7 @@ $sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
 $sDebug = $true
 #Log File Info
-$sLogPath = "C:\Program Files\AutomationAzureOrchestration"
+$sLogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $sLogName = "Install-UiPath-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $sLogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 #Orchestrator SSL check
