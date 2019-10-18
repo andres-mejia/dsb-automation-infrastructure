@@ -41,6 +41,7 @@ If(!(Test-Path -Path $sendSmsCDrive)){
 
     Write-Host "Installing NuGet necessary to install Azure Packages"
     Write-Log -LogPath $LogFile -Message "Installing NuGet necessary to install Azure Packages" -Severity "Info"
+    Register-PSRepository -Name "PSGallery" –SourceLocation "https://www.powershellgallery.com/api/v2/" -InstallationPolicy Trusted
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 
     Try {
