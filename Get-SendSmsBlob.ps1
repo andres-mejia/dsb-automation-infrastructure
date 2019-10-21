@@ -39,6 +39,17 @@ $sendSmsCDrive = "C:/$sendSmsDirectory"
 $sendSmsZip = "$sendSmsDirectory.zip"
 
 Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
+
+Write-Host "Storage container is: $StorageAccountContainer"
+Write-Log -LogPath $LogFile -Message "Storage container is: $StorageAccountContainer" -Severity "Info"
+
+Write-Host "Storage account name is: $StorageAccountName"
+Write-Log -LogPath $LogFile -Message "Storage account name is: $StorageAccountName" -Severity "Info"
+
+Write-Host "Storage account key is $StorageAccountKey"
+Write-Log -LogPath $LogFile -Message "Storage account key is $StorageAccountKey" -Severity "Info"
+
+
 Write-Host "Checking if $sendSmsDirectory exists"
 Write-Log -LogPath $LogFile -Message "Checking if $sendSmsDirectory exists" -Severity "Info"
 
