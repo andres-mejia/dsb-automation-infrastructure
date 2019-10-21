@@ -21,7 +21,11 @@ $LogName = "Retrieve-SendSms-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Write-Host "Adjusting powershell certificate settings"
+[System.Net.ServicePointManager]::SecurityProtocol = (
+    [System.Net.ServicePointManager]::SecurityProtocol -bor 
+    [System.Net.SecurityProtocolType]::Tls12
+)
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
