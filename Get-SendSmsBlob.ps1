@@ -12,14 +12,18 @@ Param (
 
 $ErrorActionPreference = "SilentlyContinue"
 #Script Version
-$sScriptVersion = "1.0"
+$ScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
-$sDebug = $true
+$Debug = $true
 #Log File Info
 $LogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $LogName = "Retrieve-SendSms-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
 $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
@@ -40,6 +44,9 @@ $sendSmsZip = "$sendSmsDirectory.zip"
 
 Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
 
+Write-Host "Temp file location is: $script:tempDirectory"
+Write-Log -LogPath $LogFile -Message "Temp file location is: $script:tempDirectory" -Severity "Info"
+
 Write-Host "Storage container is: $StorageAccountContainer"
 Write-Log -LogPath $LogFile -Message "Storage container is: $StorageAccountContainer" -Severity "Info"
 
@@ -49,11 +56,8 @@ Write-Log -LogPath $LogFile -Message "Storage account name is: $StorageAccountNa
 Write-Host "Storage account key is $StorageAccountKey"
 Write-Log -LogPath $LogFile -Message "Storage account key is $StorageAccountKey" -Severity "Info"
 
-
 Write-Host "Checking if $sendSmsDirectory exists"
 Write-Log -LogPath $LogFile -Message "Checking if $sendSmsDirectory exists" -Severity "Info"
-
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 If (!(Test-Path -Path $sendSmsCDrive)) {
 
@@ -111,7 +115,9 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
         Write-Log -LogPath $LogFile -Message "Adding storage context for $StorageAccountName" -Severity "Info"
         $context = New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
 
-        write-host $context
+        Write-Host "Storage context is: $context"
+        Write-Log -LogPath $LogFile -Message "Storage context is: $context" -Severity "Info"
+
         Write-Host "Getting blob at $sendSmsZip"
         Write-Log -LogPath $LogFile -Message "Getting blob at $sendSmsZip from container $StorageAccountContainer" -Severity "Info"
         Get-AzureStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$script:tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
