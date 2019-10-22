@@ -21,6 +21,9 @@ $LogName = "Retrieve-SendSms-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
 
+$AllProtocols = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
+[System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
+
 $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
