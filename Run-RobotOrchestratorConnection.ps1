@@ -163,7 +163,7 @@ function Main {
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop
+            Invoke-Expression "$connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop"
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
