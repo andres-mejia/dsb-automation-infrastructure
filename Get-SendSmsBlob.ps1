@@ -41,8 +41,9 @@ $sendSmsZip = "$sendSmsDirectory.zip"
 
 Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
 
-Write-Host "Current security protocol is: " +[Net.ServicePointManager]::SecurityProtocol
-Write-Log -LogPath $LogFile -Message "Current security protocol is: " + [Net.ServicePointManager]::SecurityProtocol -Severity "Info"
+$securityConfig = [Net.ServicePointManager]::SecurityProtocol
+Write-Host "Current security protocol is: $securityConfig"
+Write-Log -LogPath $LogFile -Message "Current security protocol is: $securityConfig" -Severity "Info"
 
 Write-Host "Temp file location is: $script:tempDirectory"
 Write-Log -LogPath $LogFile -Message "Temp file location is: $script:tempDirectory" -Severity "Info"
