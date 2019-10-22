@@ -163,8 +163,7 @@ function Main {
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            Invoke-Expression "$connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop"
-        }
+            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop        }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
@@ -194,7 +193,7 @@ function Main {
         Write-Host "Trying to retrieve SendSms"
         Write-Log -LogPath $LogFile -Message "Trying to retrieve SendSms" -Severity "Info"
         Try {
-            & $getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
+            Invoke-Expression "$getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer"
         }
         Catch {
             Write-Host "There was an error retrieving SendSms, exception: $_.Exception"
