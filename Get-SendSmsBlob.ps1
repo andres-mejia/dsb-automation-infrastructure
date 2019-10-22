@@ -21,13 +21,6 @@ $LogName = "Retrieve-SendSms-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
 
-Write-Host "Adjusting powershell certificate settings"
-[System.Net.ServicePointManager]::SecurityProtocol = (
-    [System.Net.ServicePointManager]::SecurityProtocol -bor 
-    [System.Net.SecurityProtocolType]::Tls12
-)
-[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-
 $script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
 New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
@@ -135,6 +128,7 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
     }
     Catch {
+        Write-Log -LogPath $LogFile -Message "There was an error retrieving SendSMS: $_.Exception.Message" -Severity "Error"
         Write-Host "There was an error retrieving SendSMS: $_.Exception.Message"
         Throw "There was an error retrieving SendSMS: $_.Exception.Message"
     }
