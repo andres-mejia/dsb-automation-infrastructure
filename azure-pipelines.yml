@@ -1,5 +1,7 @@
 pr:
-- master
+  branches:
+    include:
+    - '*' 
 
 variables:
 - name: 'hostedWindowsAgent'
@@ -15,10 +17,10 @@ stages:
   jobs:
   - job: PesterTests
     displayName: Run Pester tests for powershell scripts 
-    pool:
-      vmImage: vs2017-win2016
     # pool:
-    #   name: $(onPremWindowsAgent)
+    #   vmImage: vs2017-win2016
+    pool:
+      name: $(onPremWindowsAgent)
     steps:
     - task: NuGetToolInstaller@0
       displayName: Use NuGet 4.x
