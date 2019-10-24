@@ -1,5 +1,5 @@
-# pr:
-# - master
+pr:
+- master
 
 variables:
 - name: 'hostedWindowsAgent'
