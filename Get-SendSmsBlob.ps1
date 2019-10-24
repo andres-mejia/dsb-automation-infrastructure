@@ -72,18 +72,6 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
         Write-Host "Checking for AzureRm and Az Modules"
         Write-Log -LogPath $LogFile -Message "Checking for AzureRm and Az Modules" -Severity "Info"
 
-        If ((Get-InstalledModule -Name Az)) {
-            Write-Host "Az Module exists, unloading it now"
-            Write-Log -LogPath $LogFile -Message "Az Module exists, unloading it now" -Severity "Info"
-            Remove-Module Az
-        }
-        Else {
-            Write-Host "No Az module found, installing Nuget and then Az modules"
-            Write-Log -LogPath $LogFile -Message "No Az module found, installing Nuget and then Az modules" -Severity "Info"
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
-            Install-Module -Name Az -Repository PSGallery -AllowClobber -Force -Scope CurrentUser
-        }
-
         If (Test-Path $azureRmModuleScript) {
             Write-Host "Local AzureRm was found, trying to uninstall now"
             Write-Log -LogPath $LogFile -Message "Local AzureRm was found, trying to uninstall now" -Severity "Info"
@@ -99,6 +87,28 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Write-Host "Attempting to uninstall AzureRm from MSI"
             Write-Log -LogPath $LogFile -Message "Attempting to uninstall AzureRm from MSI" -Severity "Info"
             Start-Process msiexec.exe -Wait -ArgumentList "/x $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
+        }
+
+        If ((Get-InstalledModule -Name Az)) {
+            Write-Host "Az Module exists, unloading it now"
+            Write-Log -LogPath $LogFile -Message "Az Module exists, unloading it now" -Severity "Info"
+            Remove-Module Az
+        }
+        Else {
+            Write-Host "No Az module found, installing Nuget and then Az modules"
+            Write-Log -LogPath $LogFile -Message "No Az module found, installing Nuget and then Az modules" -Severity "Info"
+
+            Write-Host "Attempting to register PSRepository"
+            Write-Log -LogPath $LogFile -Message "Attempting to register PSRepository" -Severity "Info"
+            Register-PSRepository -Default -InstallationPolicy Trusted -Force
+
+            Write-Host "Trying to install Nuget."
+            Write-Log -LogPath $LogFile -Message "Trying to install Nuget." -Severity "Info"
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
+
+            Write-Host "Nuget package installed, trying to install Az module now"
+            Write-Log -LogPath $LogFile -Message "Nuget package installed, trying to install Az module now" -Severity "Info"
+            Install-Module -Name Az -Repository PSGallery -AllowClobber -Force -Scope CurrentUser
         }
 
         If ((Get-Module -Name AzureRm)) {
