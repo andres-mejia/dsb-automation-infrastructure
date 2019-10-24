@@ -44,18 +44,6 @@ $sendSmsZip = "$sendSmsDirectory.zip"
 
 Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
 
-Try {
-    Write-Host "Trying to install Az powershell"
-    Write-Log -LogPath $LogFile -Message "Trying to install Az powershell" -Severity "Info"
-    Install-Module -Name Az -Repository PSGallery -Force
-    
-}
-Catch {
-    Write-Log -LogPath $LogFile -Message "There was a problem installing Azure Module: $_.Exception.Message" -Severity "Error"
-    Write-Host "There was a problem installing Azure Module: $_.Exception.Message"
-    Throw "There was a problem installing Azure Module: $_.Exception.Message"
-}
-
 $securityConfig = [Net.ServicePointManager]::SecurityProtocol
 Write-Host "Current security protocol is: $securityConfig"
 Write-Log -LogPath $LogFile -Message "Current security protocol is: $securityConfig" -Severity "Info"
@@ -81,23 +69,24 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
     Write-Log -LogPath $LogFile -Message "No $sendSmsDirectory existed, downloading it now" -Severity "Info"
 
     Try {
-        Write-Host "Checking for local AzureRm Powershell version: $azureRmVersion"
-        Write-Log -LogPath $LogFile -Message "Checking for local AzureRm Powershell version: $azureRmVersion" -Severity "Info"
+        Write-Host "Checking for AzureRm and Az Modules"
+        Write-Log -LogPath $LogFile -Message "Checking for AzureRm and Az Modules" -Severity "Info"
+
+        If ((Get-InstalledModule -Name Az)) {
+            Write-Host "Az Module exists, unloading it now"
+            Write-Log -LogPath $LogFile -Message "Az Module exists, unloading it now" -Severity "Info"
+            Remove-Module Az
+        }
+        Else {
+            Write-Host "No Az module found, installing Nuget and then Az modules"
+            Write-Log -LogPath $LogFile -Message "No Az module found, installing Nuget and then Az modules" -Severity "Info"
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
+            Install-Module -Name Az -Repository PSGallery -AllowClobber -Force -Scope CurrentUser
+        }
 
         If (Test-Path $azureRmModuleScript) {
-
-            Write-Host "Local AzureRm module found, version: $azureRmVersion. Trying to import now"
-            Write-Log -LogPath $LogFile -Message "Local AzureRm module found, version: $azureRmVersion. Trying to import now" -Severity "Info"
-
-            if ((Get-Module AzureRM)) {
-                Write-Host "Unloading AzureRM module ... "
-                Write-Log -LogPath $LogFile -Message "Unloading AzureRM module ..." -Severity "Info"
-                Remove-Module AzureRM
-            }
-
-        } Else {
-            Write-Host "Local AzureRm module not found, trying to download and install now."
-            Write-Log -LogPath $LogFile -Message "Local AzureRm module not found, trying to download and install now." -Severity "Info"
+            Write-Host "Local AzureRm was found, trying to uninstall now"
+            Write-Log -LogPath $LogFile -Message "Local AzureRm was found, trying to uninstall now" -Severity "Info"
 
             $azureRmMsi = "https://github.com/Azure/azure-powershell/releases/download/v6.13.1-November2018/Azure-Cmdlets-6.13.1.24243-x86.msi"
             $downloadedAzureRmMsi = "$script:tempDirectory/Azure-Cmdlets-6.13.1.24243-x86.msi"
@@ -107,36 +96,41 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             $wc = New-Object System.Net.WebClient
             $wc.DownloadFile($azureRmMsi, $downloadedAzureRmMsi)
 
-            Write-Host "Attempting to install AzureRm from MSI"
-            Write-Log -LogPath $LogFile -Message "Attempting to install AzureRm from MSI" -Severity "Info"
-            Start-Process msiexec.exe -Wait -ArgumentList "/I $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
+            Write-Host "Attempting to uninstall AzureRm from MSI"
+            Write-Log -LogPath $LogFile -Message "Attempting to uninstall AzureRm from MSI" -Severity "Info"
+            Start-Process msiexec.exe -Wait -ArgumentList "/x $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
         }
-        Write-Host "Importing module $azureRmModuleScript"
-        Write-Log -LogPath $LogFile -Message "Importing module $azureRmModuleScript" -Severity "Info"
 
-        $currentVerbosityPreference = $Global:VerbosePreference
+        If ((Get-Module -Name AzureRm)) {
+            Write-Host "AzureRm module was found, uninstalling now"
+            Write-Log -LogPath $LogFile -Message "AzureRm module was found, uninstalling now" -Severity "Info"
+            $versions = (Get-InstalledModule AzureRM -AllVersions | Select-Object Version)
+            $versions | ForEach-Object { Uninstall-AllModules -TargetModule AzureRM -Version ($_.Version.ToString()) -Force }
+            Uninstall-Module AzureRm
+            Uninstall-AzureRm
+        }
 
-        $Global:VerbosePreference = 'SilentlyContinue'
-        $Global:VerbosePreference = $currentVerbosityPreference
-
-        Import-Module $azureRmModuleScript -Verbose:$false
+        Write-Host "Trying to import Az module"
+        Write-Log -LogPath $LogFile -Message "Trying to import Az module" -Severity "Info"
+        Import-Module Az
     }
     Catch {
-        Write-Host "There was an error importing or installing AzureRm module: $_.Exception.Message"
-        Throw "There was an error importing or installing AzureRm module: $_.Exception.Message"
+        Write-Log -LogPath $LogFile -Message "There was an error installing or importing Az module: $_.Exception.Message" -Severity "Error"
+        Write-Host "There was an error installing or importing Az module: $_.Exception.Message"
+        Throw "There was an error installing or importing Az module: $_.Exception.Message"
     }
 
     Try {
         Write-Host "Adding storage context for $StorageAccountName"
         Write-Log -LogPath $LogFile -Message "Adding storage context for $StorageAccountName" -Severity "Info"
-        $context = New-AzureStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
+        $context = New-AzStorageContext -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey
 
         Write-Host "Storage context is: $context"
         Write-Log -LogPath $LogFile -Message "Storage context is: $context" -Severity "Info"
 
         Write-Host "Getting blob at $sendSmsZip"
         Write-Log -LogPath $LogFile -Message "Getting blob at $sendSmsZip from container $StorageAccountContainer" -Severity "Info"
-        Get-AzureStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$script:tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
+        Get-AzStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$script:tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
 
         Write-Host "Expanding $script:tempDirectory/$sendSmsZip to C drive"
         Write-Log -LogPath $LogFile -Message "Expanding $script:tempDirectory/$sendSmsZip to C drive" -Severity "Info"
@@ -154,4 +148,54 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
 } Else {
     Write-Host "$sendSmsDirectory existed, exiting now"
     Write-Log -LogPath $LogFile -Message "$sendSmsDirectory existed, exiting now" -Severity "Info"
+}
+
+function Uninstall-AllModules {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetModule,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Version,
+
+        [switch]$Force,
+
+        [switch]$WhatIf
+    )
+  
+    $AllModules = @()
+    Write-Host "Trying to unistall $TargetModule"
+
+    'Creating list of dependencies...'
+    $target = Find-Module $TargetModule -RequiredVersion $version
+    $target.Dependencies | ForEach-Object {
+        if ($_.PSObject.Properties.Name -contains 'requiredVersion') {
+            $AllModules += New-Object -TypeName psobject -Property @{name = $_.name; version = $_.requiredVersion }
+        }
+        else {
+            # Assume minimum version
+            # Minimum version actually reports the installed dependency
+            # which is used, not the actual "minimum dependency." Check to
+            # see if the requested version was installed as a dependency earlier.
+            $candidate = Get-InstalledModule $_.name -RequiredVersion $version -ErrorAction Ignore
+            if ($candidate) {
+                $AllModules += New-Object -TypeName psobject -Property @{name = $_.name; version = $version }
+            }
+            else {
+                $availableModules = Get-InstalledModule $_.name -AllVersions
+                Write-Warning ("Could not find uninstall candidate for {0}:{1} - module may require manual uninstall. Available versions are: {2}" -f $_.name, $version, ($availableModules.Version -join ', '))
+            }
+        }
+    }
+    $AllModules += New-Object -TypeName psobject -Property @{name = $TargetModule; version = $Version }
+
+    foreach ($module in $AllModules) {
+        Write-Host ('Uninstalling {0} version {1}...' -f $module.name, $module.version)
+        try {
+            Uninstall-Module -Name $module.name -RequiredVersion $module.version -Force:$Force -ErrorAction Stop -WhatIf:$WhatIf
+        }
+        catch {
+            Write-Host ("`t" + $_.Exception.Message)
+        }
+    }
 }
