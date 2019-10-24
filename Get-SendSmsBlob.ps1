@@ -44,18 +44,6 @@ $sendSmsZip = "$sendSmsDirectory.zip"
 
 Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
 
-Try {
-    Write-Host "Trying to install Az powershell"
-    Write-Log -LogPath $LogFile -Message "Trying to install Az powershell" -Severity "Info"
-    Install-Module -Name Az -Repository PSGallery -Force
-    
-}
-Catch {
-    Write-Log -LogPath $LogFile -Message "There was a problem installing Azure Module: $_.Exception.Message" -Severity "Error"
-    Write-Host "There was a problem installing Azure Module: $_.Exception.Message"
-    Throw "There was a problem installing Azure Module: $_.Exception.Message"
-}
-
 $securityConfig = [Net.ServicePointManager]::SecurityProtocol
 Write-Host "Current security protocol is: $securityConfig"
 Write-Log -LogPath $LogFile -Message "Current security protocol is: $securityConfig" -Severity "Info"
