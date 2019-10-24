@@ -95,20 +95,27 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Remove-Module Az
         }
         Else {
-            Write-Host "No Az module found, installing Nuget and then Az modules"
-            Write-Log -LogPath $LogFile -Message "No Az module found, installing Nuget and then Az modules" -Severity "Info"
+            $timeoutSeconds = 300
+            $code = {
+                # your commands here, e.g.
+                Write-Host "No Az module found, installing Nuget and then Az modules"
+                Write-Log -LogPath $LogFile -Message "No Az module found, installing Nuget and then Az modules" -Severity "Info"
 
-            Write-Host "Attempting to register PSRepository"
-            Write-Log -LogPath $LogFile -Message "Attempting to register PSRepository" -Severity "Info"
-            Register-PSRepository -Default -InstallationPolicy Trusted -Force
+                Write-Host "Attempting to register PSRepository"
+                Write-Log -LogPath $LogFile -Message "Attempting to register PSRepository" -Severity "Info"
+                Register-PSRepository -Default -InstallationPolicy Trusted -Force
 
-            Write-Host "Trying to install Nuget."
-            Write-Log -LogPath $LogFile -Message "Trying to install Nuget." -Severity "Info"
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
+                Write-Host "Trying to install Nuget."
+                Write-Log -LogPath $LogFile -Message "Trying to install Nuget." -Severity "Info"
+                Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
 
-            Write-Host "Nuget package installed, trying to install Az module now"
-            Write-Log -LogPath $LogFile -Message "Nuget package installed, trying to install Az module now" -Severity "Info"
-            Install-Module -Name Az -Repository PSGallery -AllowClobber -Force -Scope CurrentUser
+                Write-Host "Nuget package installed, trying to install Az module now"
+                Write-Log -LogPath $LogFile -Message "Nuget package installed, trying to install Az module now" -Severity "Info"
+                Install-Module -Name Az -Repository PSGallery -AllowClobber -Force -Scope CurrentUser
+            }
+            $j = Start-Job -ScriptBlock $code
+            if (Wait-Job $j -Timeout $timeoutSeconds) { Receive-Job $j }
+            Remove-Job -force $j
         }
 
         If ((Get-Module -Name AzureRm)) {
