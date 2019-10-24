@@ -24,15 +24,15 @@ $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 $AllProtocols = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
 [System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
 
-$script:tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
-New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
+$tempDirectory = (Join-Path $ENV:TEMP "SendSms-$(Get-Date -f "yyyyMMddhhmmssfff")")
+New-Item -ItemType Directory -Path $tempDirectory | Out-Null
 
-[System.Version] $azureRmVersion = "6.13.1"
+[System.Version] $azureVersion = "2.8.0"
 $powershellModuleDir = "C:\Program Files (x86)\WindowsPowerShell\Modules"
 If (!(Test-Path -Path $powershellModuleDir)) {
     New-Item -ItemType Directory -Force -Path $powershellModuleDir
 }
-$azureRmModuleScript = "$powershellModuleDir\AzureRM\$azureRmVersion\AzureRM.psd1"
+$azureRmModuleScript = "$powershellModuleDir\AzureRM\$azureVersion\AzureRM.psd1"
 
 $p = [Environment]::GetEnvironmentVariable("PSModulePath")
 $p += ";$powershellModuleDir\"
@@ -48,8 +48,8 @@ $securityConfig = [Net.ServicePointManager]::SecurityProtocol
 Write-Host "Current security protocol is: $securityConfig"
 Write-Log -LogPath $LogFile -Message "Current security protocol is: $securityConfig" -Severity "Info"
 
-Write-Host "Temp file location is: $script:tempDirectory"
-Write-Log -LogPath $LogFile -Message "Temp file location is: $script:tempDirectory" -Severity "Info"
+Write-Host "Temp file location is: $tempDirectory"
+Write-Log -LogPath $LogFile -Message "Temp file location is: $tempDirectory" -Severity "Info"
 
 Write-Host "Storage container is: $StorageAccountContainer"
 Write-Log -LogPath $LogFile -Message "Storage container is: $StorageAccountContainer" -Severity "Info"
@@ -76,8 +76,8 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Write-Host "Local AzureRm was found, trying to uninstall now"
             Write-Log -LogPath $LogFile -Message "Local AzureRm was found, trying to uninstall now" -Severity "Info"
 
-            $azureRmMsi = "https://github.com/Azure/azure-powershell/releases/download/v6.13.1-November2018/Azure-Cmdlets-6.13.1.24243-x86.msi"
-            $downloadedAzureRmMsi = "$script:tempDirectory/Azure-Cmdlets-6.13.1.24243-x86.msi"
+            $azureRmMsi = "https://github.com/Azure/azure-powershell/releases/download/v2.8.0-October2019/Az-Cmdlets-2.8.0.30290-x86.msi"
+            $downloadedAzureRmMsi = "$tempDirectory/Az-Cmdlets-2.8.0.30290-x86.msi"
             Write-Host "Attempting to download file from from: $azureRmMsi to path $downloadedAzureRmMsi"
             Write-Log -LogPath $LogFile -Message "Attempting to download file from from: $azureRmMsi to path $downloadedAzureRmMsi" -Severity "Info"
 
@@ -86,7 +86,7 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
 
             Write-Host "Attempting to uninstall AzureRm from MSI"
             Write-Log -LogPath $LogFile -Message "Attempting to uninstall AzureRm from MSI" -Severity "Info"
-            Start-Process msiexec.exe -Wait -ArgumentList "/x $script:tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
+            Start-Process msiexec.exe -Wait -ArgumentList "/x $tempDirectory\Azure-Cmdlets-6.13.1.24243-x86.msi /quiet"
         }
 
         If ((Get-InstalledModule -Name Az)) {
@@ -116,6 +116,25 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             $j = Start-Job -ScriptBlock $code
             if (Wait-Job $j -Timeout $timeoutSeconds) { Receive-Job $j }
             Remove-Job -force $j
+
+            Write-Host "Also trying to install Az Module with msi"
+            Write-Log -LogPath $LogFile -Message "Also trying to install Az Module with msi" -Severity "Info"
+
+            $azureAzMsi = "https://github.com/Azure/azure-powershell/releases/download/v2.8.0-October2019/Az-Cmdlets-2.8.0.30290-x86.msi"
+            $downloadedAzureAzMsi = "$tempDirectory/Az-Cmdlets-2.8.0.30290-x86.msi"
+            Write-Host "Attempting to download file from from: $azureAzMsi to path $downloadedAzureAzMsi"
+            Write-Log -LogPath $LogFile -Message "Attempting to download file from from: $azureAzMsi to path $downloadedAzureAzMsi" -Severity "Info"
+
+            $wc = New-Object System.Net.WebClient
+            $wc.DownloadFile($azureAzMsi, $downloadedAzureAzMsi)
+
+            Write-Host "Attempting to install AzureRm from MSI"
+            Write-Log -LogPath $LogFile -Message "Attempting to install AzureRm from MSI" -Severity "Info"
+            Start-Process msiexec.exe -Wait -ArgumentList "/I $tempDirectory/Az-Cmdlets-2.8.0.30290-x86.msi /quiet"
+
+            Write-Host "Trying to import Az module"
+            Write-Log -LogPath $LogFile -Message "Trying to import Az module" -Severity "Info"
+            
         }
 
         If ((Get-Module -Name AzureRm)) {
@@ -127,8 +146,6 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             Uninstall-AzureRm
         }
 
-        Write-Host "Trying to import Az module"
-        Write-Log -LogPath $LogFile -Message "Trying to import Az module" -Severity "Info"
         Import-Module Az
     }
     Catch {
@@ -147,15 +164,15 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
 
         Write-Host "Getting blob at $sendSmsZip"
         Write-Log -LogPath $LogFile -Message "Getting blob at $sendSmsZip from container $StorageAccountContainer" -Severity "Info"
-        Get-AzStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$script:tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
+        Get-AzStorageBlobContent -Container $StorageAccountContainer -Blob $sendSmsZip -Destination "$tempDirectory/$sendSmsZip" -Context $context -ErrorAction Stop
 
-        Write-Host "Expanding $script:tempDirectory/$sendSmsZip to C drive"
-        Write-Log -LogPath $LogFile -Message "Expanding $script:tempDirectory/$sendSmsZip to C drive" -Severity "Info"
-        Expand-Archive -Path "$script:tempDirectory/$sendSmsZip" -DestinationPath "C:/" -Force
+        Write-Host "Expanding $tempDirectory/$sendSmsZip to C drive"
+        Write-Log -LogPath $LogFile -Message "Expanding $tempDirectory/$sendSmsZip to C drive" -Severity "Info"
+        Expand-Archive -Path "$tempDirectory/$sendSmsZip" -DestinationPath "C:/" -Force
 
-        Write-Host "Removing temp directory $script:tempDirectory"
-        Write-Log -LogPath $LogFile -Message "Removing temp directory $script:tempDirectory" -Severity "Info"
-        Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+        Write-Host "Removing temp directory $tempDirectory"
+        Write-Log -LogPath $LogFile -Message "Removing temp directory $tempDirectory" -Severity "Info"
+        Remove-Item $tempDirectory -Recurse -Force | Out-Null
     }
     Catch {
         Write-Log -LogPath $LogFile -Message "There was an error retrieving SendSMS: $_.Exception.Message" -Severity "Error"
