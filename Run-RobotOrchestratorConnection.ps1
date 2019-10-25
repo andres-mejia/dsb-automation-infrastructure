@@ -192,7 +192,7 @@ function Main {
 
         Write-Host "Trying to retrieve SendSms"
         Write-Log -LogPath $LogFile -Message "Trying to retrieve SendSms" -Severity "Info"
-        
+
         function Retrieve-SendSms {
             param(
                 [Parameter(Mandatory)]
@@ -222,13 +222,13 @@ function Main {
             Throw "There was an error retrieving SendSms, exception: $_.Exception"
             Break
         }
-        
     }
     End {
         Write-Host "Run-RobotOrchestrationConnection script has finished running. Exiting now"
         Write-Log -LogPath $LogFile -Message "Run-RobotOrchestrationConnection script has finished running. Exiting now" -Severity "Info"        
     }
 }
+
 
 Main
 Finish-Log
