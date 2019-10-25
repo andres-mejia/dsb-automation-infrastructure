@@ -212,8 +212,7 @@ function Main {
         Write-Log -LogPath $LogFile -Message "Trying to install fonts" -Severity "Info"
 
         Try {
-            & C:\Users\naku0510\local_code\open_source\dsb-automation-infrastructure\Install-Fonts.ps1 -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
-            # & $installFontsDownload -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
+            & $installFontsDownload -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
         }
         Catch {
             Write-Host "There was an error installing fonts, exception: $_.Exception"
