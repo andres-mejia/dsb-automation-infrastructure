@@ -10,7 +10,7 @@ Param (
     [string] $StorageAccountContainer
 )
 
-$ErrorActionPreference = "SilentlyContinue"
+$ErrorActionPreference = "Stop"
 #Script Version
 $ScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
@@ -79,6 +79,11 @@ Try {
     $fontDirectory = "C:\Windows\Fonts"
     $objShell = New-Object -ComObject Shell.Application
     $objFolder = $objShell.namespace($viaExpandedDir)
+    $totalFonts = $objFolder.items() | measure
+    $totalFontsNum = $totalFonts.Count
+    Write-Host "There are a total of this many fonts: $totalFontsNum"
+    Write-Log -LogPath $LogFile -Message "There are a total of this many fonts: $totalFontsNum" -Severity "Info"
+    
     foreach ($file in $objFolder.items())
     {
         $fileType = $($objFolder.getDetailsOf($file, 2))
