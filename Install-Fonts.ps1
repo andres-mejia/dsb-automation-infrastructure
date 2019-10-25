@@ -111,7 +111,7 @@ Try {
 
     Write-Host "Removing temp directory $script:tempDirectory"
     Write-Log -LogPath $LogFile -Message "Removing temp directory $script:tempDirectory" -Severity "Info"
-    Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+    # Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 }
 Catch {
     Write-Log -LogPath $LogFile -Message "There was an error installing fonts: $_.Exception.Message" -Severity "Error"
