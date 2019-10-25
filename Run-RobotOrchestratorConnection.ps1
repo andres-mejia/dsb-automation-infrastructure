@@ -86,7 +86,12 @@ function Main {
         $sendSms = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Get-SendSmsBlob.ps1"
         Write-Host "Attempting to download file from from: $sendSms"
         $script:getSendSmsBlob = "$connectRoboPath\Get-SendSmsBlob.ps1"
-        $wc.DownloadFile($sendSms, $getSendSmsBlob)       
+        $wc.DownloadFile($sendSms, $getSendSmsBlob)
+
+        $installFonts = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Install-Fonts.ps1"
+        Write-Host "Attempting to download file from from: $installFonts"
+        $script:installFontsDownload = "$connectRoboPath\Install-Fonts.ps1"
+        $wc.DownloadFile($installFonts, $installFontsDownload)       
 
         $p = [Environment]::GetEnvironmentVariable("PSModulePath")
         $p += ";C:\Program Files\WindowsPowerShell\Modules\"
@@ -202,6 +207,17 @@ function Main {
             Throw "There was an error retrieving SendSms, exception: $_.Exception"
             Break
         }
+
+        Try {
+            & $installFontsDownload -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
+        }
+        Catch {
+            Write-Host "There was an error installing fonts, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
+            Throw "There was an error installing fonts, exception: $_.Exception"
+            Break
+        }
+
     }
     End {
         Write-Host "Run-RobotOrchestrationConnection script has finished running. Exiting now"
