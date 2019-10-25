@@ -1,3 +1,14 @@
+add-type @"
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+public class TrustAllCertsPolicy : ICertificatePolicy {
+    public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate,
+                                        WebRequest request, int certificateProblem) {
+        return true;
+    }
+}
+"@
+
 function Start-Log {
 
     [CmdletBinding()]
@@ -464,6 +475,97 @@ function Install-Filebeat {
     Write-Log -LogPath $FullLogPath -Message "$MyInvocation.MyCommand.Name finished without Throwing error" -Severity "Info"
 }
 
+function Get-Blob {
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [string] $BlobFile,
+            
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountName,
+        
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountKey,
+
+        [Parameter(Mandatory = $true)]
+        [string] $StorageAccountContainer,
+
+        [Parameter(Mandatory = $true)]
+        [string] $OutPath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $FullLogPath
+    )
+
+    $OutPath = Join-Path -Path $OutPath -ChildPath $BlobFile
+
+    Write-Host "Blob to download is: $BlobFile"
+    Write-Log -LogPath $FullLogPath -Message "Blob to download is: $BlobFile" -Severity "Info"
+
+    Write-Host "Location to save blob is: $OutPath"
+    Write-Log -LogPath $FullLogPath -Message "Location to save blob is: $OutPath" -Severity "Info"
+
+    Write-Host "Storage container is: $StorageAccountContainer"
+    Write-Log -LogPath $FullLogPath -Message "Storage container is: $StorageAccountContainer" -Severity "Info"
+
+    Write-Host "Storage account name is: $StorageAccountName"
+    Write-Log -LogPath $FullLogPath -Message "Storage account name is: $StorageAccountName" -Severity "Info"
+
+    Write-Host "Storage account key is $StorageAccountKey"
+    Write-Log -LogPath $FullLogPath -Message "Storage account key is $StorageAccountKey" -Severity "Info"
+
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+
+    $method = "GET"
+    $headerDate = '2015-02-21'
+    $headers = @{"x-ms-version" = "$headerDate" }
+    $Url = "https://$StorageAccountName.blob.core.windows.net/$StorageAccountContainer/$BlobFile"
+
+    Write-Host "Blob URL is $Url"
+    Write-Log -LogPath $FullLogPath -Message "Blob URL is $Url" -Severity "Info"
+    
+    $xmsdate = (get-date -format r).ToString()
+    $headers.Add("x-ms-date", $xmsdate)
+
+    $signatureString = "$method$([char]10)$([char]10)$([char]10)$contentLength$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)"
+    #Add CanonicalizedHeaders
+    $signatureString += "x-ms-date:" + $headers["x-ms-date"] + "$([char]10)"
+    $signatureString += "x-ms-version:" + $headers["x-ms-version"] + "$([char]10)"
+    #Add CanonicalizedResource
+    $uri = New-Object System.Uri -ArgumentList $url
+    $signatureString += "/" + $StorageAccountName + $uri.AbsolutePath
+
+    $dataToMac = [System.Text.Encoding]::UTF8.GetBytes($signatureString)
+    $accountKeyBytes = [System.Convert]::FromBase64String($StorageAccountKey)
+    $hmac = new-object System.Security.Cryptography.HMACSHA256((, $accountKeyBytes))
+    $signature = [System.Convert]::ToBase64String($hmac.ComputeHash($dataToMac))
+
+    $headers.Add("Authorization", "SharedKey " + $StorageAccountName + ":" + $signature);
+
+    Try {
+        Write-Host "Attempting file download now"
+        Write-Log -LogPath $FullLogPath -Message "Attempting file download now" -Severity "Info"
+
+        Invoke-RestMethod -Uri $Url -Method $method -Headers $headers -OutFile $OutPath -ErrorAction Stop
+    }
+    Catch {
+        Write-Host "There was a problem retrieving the file: $_.Exception.Message"
+        Write-Log -LogPath $FullLogPath -Message "There was a problem retrieving the file: $_.Exception.Message" -Severity "Error"
+        Throw "There was an error retrieving blob: $_.Exception.Message"
+    }
+
+    If (!(Test-Path -Path $OutPath)) {
+        Write-Host "File did not exist after attempting retrieval"
+        Write-Log -LogPath $FullLogPath -Message "File did not exist after attempting retrieval" -Severity "Error"
+        Throw "Blob to download did not exist"
+    }
+    Else {
+        Write-Host "File did exist after attempting retrieval"
+        Write-Log -LogPath $FullLogPath -Message "File did exist after attempting retrieval" -Severity "Info"
+    }
+}
+
 Export-ModuleMember -Function Start-Log
 Export-ModuleMember -Function Write-Log
 Export-ModuleMember -Function Wait-ForService
@@ -478,3 +580,4 @@ Export-ModuleMember -Function Get-FilebeatConfig
 Export-ModuleMember -Function Start-FilebeatService
 Export-ModuleMember -Function Remove-OldFilebeatFolders
 Export-ModuleMember -Function Confirm-FilebeatServiceRunning
+Export-ModuleMember -Function Get-Blob
