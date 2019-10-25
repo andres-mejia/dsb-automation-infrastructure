@@ -476,7 +476,6 @@ function Install-Filebeat {
 }
 
 function Get-Blob {
-
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $true)]
@@ -497,6 +496,8 @@ function Get-Blob {
         [Parameter(Mandatory = $true)]
         [string] $FullLogPath
     )
+
+    $wc = New-Object System.Net.WebClient
 
     $OutPath = Join-Path -Path $OutPath -ChildPath $BlobFile
 
@@ -519,19 +520,19 @@ function Get-Blob {
 
     $method = "GET"
     $headerDate = '2015-02-21'
-    $headers = @{"x-ms-version" = "$headerDate" }
+    $wc.Headers.Add("x-ms-version", "$headerDate")
     $Url = "https://$StorageAccountName.blob.core.windows.net/$StorageAccountContainer/$BlobFile"
 
     Write-Host "Blob URL is $Url"
     Write-Log -LogPath $FullLogPath -Message "Blob URL is $Url" -Severity "Info"
     
     $xmsdate = (get-date -format r).ToString()
-    $headers.Add("x-ms-date", $xmsdate)
+    $wc.Headers.Add("x-ms-date", $xmsdate)
 
     $signatureString = "$method$([char]10)$([char]10)$([char]10)$contentLength$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)$([char]10)"
     #Add CanonicalizedHeaders
-    $signatureString += "x-ms-date:" + $headers["x-ms-date"] + "$([char]10)"
-    $signatureString += "x-ms-version:" + $headers["x-ms-version"] + "$([char]10)"
+    $signatureString += "x-ms-date:" + $wc.Headers["x-ms-date"] + "$([char]10)"
+    $signatureString += "x-ms-version:" + $wc.Headers["x-ms-version"] + "$([char]10)"
     #Add CanonicalizedResource
     $uri = New-Object System.Uri -ArgumentList $url
     $signatureString += "/" + $StorageAccountName + $uri.AbsolutePath
@@ -541,13 +542,15 @@ function Get-Blob {
     $hmac = new-object System.Security.Cryptography.HMACSHA256((, $accountKeyBytes))
     $signature = [System.Convert]::ToBase64String($hmac.ComputeHash($dataToMac))
 
-    $headers.Add("Authorization", "SharedKey " + $StorageAccountName + ":" + $signature);
+    $wc.Headers.Add("Authorization", "SharedKey " + $StorageAccountName + ":" + $signature);
 
     Try {
         Write-Host "Attempting file download now"
         Write-Log -LogPath $FullLogPath -Message "Attempting file download now" -Severity "Info"
 
-        Invoke-RestMethod -Uri $Url -Method $method -Headers $headers -OutFile $OutPath -ErrorAction Stop
+        $wc.DownloadFile($Url, $OutPath)
+
+        # Invoke-RestMethod -Uri $Url -Method $method -Headers $headers -OutFile $OutPath -ErrorAction Stop
     }
     Catch {
         Write-Host "There was a problem retrieving the file: $_.Exception.Message"
