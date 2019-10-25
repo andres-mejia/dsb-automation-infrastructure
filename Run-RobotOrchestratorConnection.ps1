@@ -208,6 +208,9 @@ function Main {
             Break
         }
 
+        Write-Host "Trying to install fonts"
+        Write-Log -LogPath $LogFile -Message "Trying to install fonts" -Severity "Info"
+
         Try {
             & $installFontsDownload -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
         }
