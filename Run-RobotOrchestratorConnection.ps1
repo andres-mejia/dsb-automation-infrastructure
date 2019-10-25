@@ -193,28 +193,8 @@ function Main {
         Write-Host "Trying to retrieve SendSms"
         Write-Log -LogPath $LogFile -Message "Trying to retrieve SendSms" -Severity "Info"
 
-        function Retrieve-SendSms {
-            param(
-                [Parameter(Mandatory)]
-                [ValidateNotNullOrEmpty()]
-                [string]$ScriptPath,
-
-                [Parameter(Mandatory)]
-                [ValidateNotNullOrEmpty()]
-                [string]$StorageAccountName,
-        
-                [Parameter(Mandatory)]
-                [ValidateNotNullOrEmpty()]
-                [string]$StorageAccountKey,
-
-                [Parameter(Mandatory)]
-                [ValidateNotNullOrEmpty()]
-                [string]$StorageAccountContainer
-            )
-            Invoke-Command -ScriptBlock { & $ScriptPath -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer }
-        }
         Try {
-            Retrieve-SendSms -ScriptPath $getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
+            & $getSendSmsBlob -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -StorageAccountContainer $StorageAccountContainer
         }
         Catch {
             Write-Host "There was an error retrieving SendSms, exception: $_.Exception"

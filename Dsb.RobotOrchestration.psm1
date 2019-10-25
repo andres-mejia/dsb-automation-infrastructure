@@ -516,8 +516,6 @@ function Get-Blob {
     Write-Host "Storage account key is $StorageAccountKey"
     Write-Log -LogPath $FullLogPath -Message "Storage account key is $StorageAccountKey" -Severity "Info"
 
-    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-
     $method = "GET"
     $headerDate = '2015-02-21'
     $wc.Headers.Add("x-ms-version", "$headerDate")
