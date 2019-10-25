@@ -80,7 +80,15 @@ If (!(Test-Path -Path $sendSmsCDrive)) {
             -StorageAccountName $StorageAccountName `
             -StorageAccountContainer $StorageAccountContainer `
             -BlobFile $sendSmsZip `
-            -OutPath "C:"
+            -OutPath $script:tempDirectory
+
+        Write-Host "Expanding $script:tempDirectory/$sendSmsZip to C drive"
+        Write-Log -LogPath $LogFile -Message "Expanding $script:tempDirectory/$sendSmsZip to C drive" -Severity "Info"
+        Expand-Archive -Path "$script:tempDirectory/$sendSmsZip" -DestinationPath "C:/" -Force
+
+        Write-Host "Removing temp directory $script:tempDirectory"
+        Write-Log -LogPath $LogFile -Message "Removing temp directory $script:tempDirectory" -Severity "Info"
+        Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
     }
     Catch {
         Write-Log -LogPath $LogFile -Message "There was an error retrieving SendSMS: $_.Exception.Message" -Severity "Error"
