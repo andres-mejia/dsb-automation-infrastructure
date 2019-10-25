@@ -17,7 +17,7 @@ $ScriptVersion = "1.0"
 $Debug = $true
 #Log File Info
 $LogPath = "C:\ProgramData\AutomationAzureOrchestration"
-$LogName = "Retrieve-SendSms-$(Get-Date -f "yyyyMMddhhmmssfff").log"
+$LogName = "Install-Fonts-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Temp location
 
@@ -80,10 +80,23 @@ Try {
             $fontName = $($objFolder.getDetailsOf($File, 21))
             $regKeyName = $fontName,$openType -join " "
             $regKeyValue = $file.Name
-            Write-Output "Installing: $regKeyValue"
-            Move-Item -Path $file.Path -Destination $fontDirectory -Force
-            Write-Host "Moved $regKeyValue"
-            Invoke-Command -ScriptBlock { $null = New-ItemProperty -Path $args[0] -Name $args[1] -Value $args[2] -PropertyType String -Force } -ArgumentList $regPath,$regKeyname,$regKeyValue
+            If (Test-Path -Path (Join-Path -Path $fontDirectory -ChildPath $file.Name)) {
+                Write-Host "$regKeyValue already existed, skipping installation"
+                Write-Log -LogPath $LogFile -Message "$regKeyValue already existed, skipping installation" -Severity "Info"                
+            }
+            Else {
+                Write-Host "Installing: $regKeyValue"
+                Write-Log -LogPath $LogFile -Message "Installing: $regKeyValue" -Severity "Info"
+                Move-Item -Path $file.Path -Destination $fontDirectory -Force
+                Write-Host "Moved $regKeyValue"
+                Invoke-Command -ScriptBlock { $null = New-ItemProperty -Path $args[0] -Name $args[1] -Value $args[2] -PropertyType String -Force } -ArgumentList $regPath, $regKeyname, $regKeyValue -ErrorAction Stop
+            }
+            If (!(Test-Path -Path (Join-Path -Path $fontDirectory -ChildPath $file.Name))) {
+                Write-Host "Font could not be found: $regKeyValue"
+                Write-Log -LogPath $LogFile -Message "Font could not be found: $regKeyValue" -Severity "Error"
+                Throw "Font could not be found: $regKeyValue"
+                Break
+            }
         }
     }
     Write-Host "Successfully installed fonts"
