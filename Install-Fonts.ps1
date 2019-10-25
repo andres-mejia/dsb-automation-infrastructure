@@ -59,13 +59,20 @@ Try {
         -StorageAccountContainer $StorageAccountContainer `
         -BlobFile $viaOfficeZip `
         -OutPath $script:tempDirectory
-    Write-Host "Expanding $script:tempDirectory/$viaOfficeZip to fonts folder"
-    Write-Log -LogPath $LogFile -Message "Expanding $script:tempDirectory/$viaOfficeZip to fonts folder" -Severity "Info"
 
     $viaExpandedDir = "$script:tempDirectory\$via"
-    Write-Host $viaExpandedDir
+    Write-Host "Expanding $script:tempDirectory/$viaOfficeZip to $viaExpandedDir"
+    Write-Log -LogPath $LogFile -Message "Expanding $script:tempDirectory/$viaOfficeZip to $viaExpandedDir" -Severity "Info"
+
     New-Item -ItemType Directory -Path $viaExpandedDir
     Expand-Archive -Path "$script:tempDirectory\$viaOfficeZip" -DestinationPath $viaExpandedDir -Force
+
+    If ((Get-ChildItem $viaExpandedDir | Measure-Object).Count -eq 0) {
+        Write-Host "Expanded zip was empty"
+        Write-Log -LogPath $LogFile -Message "Expanded zip was empty" -Severity "Error"
+        Throw "Expanded zip was empty"
+        Break        
+    }
     
     $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
 
