@@ -547,19 +547,19 @@ function Get-Blob {
         Write-Log -LogPath $FullLogPath -Message "Attempting file download now" -Severity "Info"
 
         $wc.DownloadFile($Url, $OutPath)
-
-        # Invoke-RestMethod -Uri $Url -Method $method -Headers $headers -OutFile $OutPath -ErrorAction Stop
     }
     Catch {
         Write-Host "There was a problem retrieving the file: $_.Exception.Message"
         Write-Log -LogPath $FullLogPath -Message "There was a problem retrieving the file: $_.Exception.Message" -Severity "Error"
         Throw "There was an error retrieving blob: $_.Exception.Message"
+        Break
     }
 
     If (!(Test-Path -Path $OutPath)) {
         Write-Host "File did not exist after attempting retrieval"
         Write-Log -LogPath $FullLogPath -Message "File did not exist after attempting retrieval" -Severity "Error"
         Throw "Blob to download did not exist"
+        Break
     }
     Else {
         Write-Host "File did exist after attempting retrieval"
