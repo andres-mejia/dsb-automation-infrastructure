@@ -69,7 +69,8 @@ function Write-Log
 
     Try {
         $logString = Format-LogMessage -Message $Message -Environment $Environment -LogPath $LogPath -Severity $Severity
-        $logString.Trim() | Out-File -FilePath $LogPath -Append -Force
+        $logString = $logString.Trim()
+        Add-Content -Path $LogPath -Value $logString -Force
     }
     Catch {
         Write-Host "There was an error writing log message: {$Message} to log: {$LogPath}: $_.Exception"
@@ -213,7 +214,9 @@ function Get-FilebeatConfig {
     $filebeatYaml = "C:\Program Files\Filebeat\filebeat.yml"
     Write-Host "Removing existing filebeat config from: $filebeatYaml"
     Write-Log -LogPath $FullLogPath -Message "Removing existing filebeat config from: $filebeatYaml" -Severity "Info"
-    Remove-Item -Path $filebeatYaml -Force
+    If ((Test-Path -Path $filebeatYaml)) {
+        Remove-Item -Path $filebeatYaml -Force
+    }
 
     $configUri = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/filebeat.yml"
     Write-Host "Attempting to download filebeat config from: $configUri"
@@ -242,7 +245,7 @@ function Confirm-FilebeatServiceRunning {
         return $true
     }
     else {
-        Write-Host "Filebeat service is not running"
+        Write-Host "Filebeat servicfye is not running"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running" -Severity "Warn"
         return $false
     }

@@ -1,32 +1,32 @@
 [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory = $true)]
-        [ValidateSet("6.8.1","7.2.0")]
-        [string] $FilebeatVersion,
+Param (
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("6.8.1", "7.2.0")]
+    [string] $FilebeatVersion,
 
-        [Parameter(Mandatory = $true)]
-        [string] $OrchestratorUrl,
+    [Parameter(Mandatory = $true)]
+    [string] $OrchestratorUrl,
 
-        [Parameter(Mandatory = $true)]
-        [string] $OrchestratorApiUrl,
+    [Parameter(Mandatory = $true)]
+    [string] $OrchestratorApiUrl,
 
-        [Parameter(Mandatory = $true)]
-        [string] $OrchestratorTenant,
+    [Parameter(Mandatory = $true)]
+    [string] $OrchestratorTenant,
 
-        [Parameter(Mandatory = $true)]
-        [string] $HumioIngestToken,
+    [Parameter(Mandatory = $true)]
+    [string] $HumioIngestToken,
 
-        [Parameter(Mandatory = $true)]
-        [string] $NugetFeedUrl,
+    [Parameter(Mandatory = $true)]
+    [string] $NugetFeedUrl,
 
-        [Parameter(Mandatory = $true)]
-        [string] $StorageAccountName,
+    [Parameter(Mandatory = $true)]
+    [string] $StorageAccountName,
 
-        [Parameter(Mandatory = $true)]
-        [string] $StorageAccountKey,
+    [Parameter(Mandatory = $true)]
+    [string] $StorageAccountKey,
 
-        [Parameter(Mandatory = $true)]
-        [string] $StorageAccountContainer
+    [Parameter(Mandatory = $true)]
+    [string] $StorageAccountContainer
 )
 
 $script:ErrorActionPreference = "SilentlyContinue"
@@ -49,7 +49,7 @@ function Main {
     Begin {
         #Define TLS for Invoke-WebRequest
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        if(!$sslCheck) {
+        if (!$sslCheck) {
             [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
         }
 
@@ -155,7 +155,9 @@ function Main {
         Write-Host "Trying to install UiPath"
         Write-Log -LogPath $LogFile -Message "Trying to install UiPath" -Severity "Info"
         Try {
-            & $installRoboDownload -studioVersion 19.4.3 -robotType Nonproduction -ErrorAction Stop
+            & $installRoboDownload -studioVersion "19.4.3" -robotType "Nonproduction" -ErrorAction Stop
+            Write-Host "Ran install uipath script"
+            Write-Log -LogPath $LogFile -Message "Ran install uipath script" -Severity "Info"
             Wait-ForService "UiPath Robot*" "00:01:20"
         }
         Catch {
@@ -168,7 +170,8 @@ function Main {
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop        }
+            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop        
+        }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
             Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
