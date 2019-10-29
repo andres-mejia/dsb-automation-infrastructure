@@ -133,14 +133,12 @@ function Main {
     Write-Host "Robo status is: $roboState"
     Log-Write -LogPath $sLogFile -LineValue "Robo status is: $roboState"
 
-    if ($roboService.Status -eq "Stopped" ) {
+    if (($roboService -and $roboService.Status -eq "Stopped" )) {
       Write-Host "Robot service was stopped, starting and waiting for it now"
       Log-Write -LogPath $sLogFile -LineValue "Robot service was stopped, starting and waiting for it now"
       Start-Service $roboService.Name
     }
-    # Wait for the service to reach the $serviceStatus or a maximum of specified time
-    $robotService.WaitForStatus("Running", $timeLength)
-    
+  
   }
   End {
       If($?){
@@ -328,29 +326,6 @@ function Log-Start {
 
       #Create file and start logging
       New-Item -Path $LogPath -Value $LogName -ItemType File
-
-      Add-Content -Path $sFullPath -Value "***************************************************************************************************"
-      Add-Content -Path $sFullPath -Value "Started processing at [$([DateTime]::Now)]."
-      Add-Content -Path $sFullPath -Value "***************************************************************************************************"
-      Add-Content -Path $sFullPath -Value ""
-      Add-Content -Path $sFullPath -Value "Running script version [$ScriptVersion]."
-      Add-Content -Path $sFullPath -Value ""
-      Add-Content -Path $sFullPath -Value "Running with debug mode [$sDebug]."
-      Add-Content -Path $sFullPath -Value ""
-      Add-Content -Path $sFullPath -Value "***************************************************************************************************"
-      Add-Content -Path $sFullPath -Value ""
-
-      #Write to screen for debug mode
-      Write-Debug "***************************************************************************************************"
-      Write-Debug "Started processing at [$([DateTime]::Now)]."
-      Write-Debug "***************************************************************************************************"
-      Write-Debug ""
-      Write-Debug "Running script version [$ScriptVersion]."
-      Write-Debug ""
-      Write-Debug "Running with debug mode [$sDebug]."
-      Write-Debug ""
-      Write-Debug "***************************************************************************************************"
-      Write-Debug ""
     }
 
 }
@@ -462,19 +437,6 @@ function Log-Finish {
     )
 
     Process{
-      Add-Content -Path $LogPath -Value ""
-      Add-Content -Path $LogPath -Value "***************************************************************************************************"
-      Add-Content -Path $LogPath -Value "Finished processing at [$([DateTime]::Now)]."
-      Add-Content -Path $LogPath -Value "***************************************************************************************************"
-      Add-Content -Path $LogPath -Value ""
-
-      #Write to screen for debug mode
-      Write-Debug ""
-      Write-Debug "***************************************************************************************************"
-      Write-Debug "Finished processing at [$([DateTime]::Now)]."
-      Write-Debug "***************************************************************************************************"
-      Write-Debug ""
-
       #Exit calling script if NoExit has not been specified or is set to False
       If(!($NoExit) -or ($NoExit -eq $False)){
         Exit
