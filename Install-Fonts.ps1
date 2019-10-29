@@ -74,49 +74,43 @@ Try {
         Break        
     }
     
-    $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
+    $SourceDir = $viaExpandedDir
+    $Source = "$viaExpandedDir\*"
+    $Destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
+    $TempFolder = "C:\Windows\Temp\Fonts"
 
-    $fontDirectory = "C:\Windows\Fonts"
-    $objShell = New-Object -ComObject Shell.Application
-    $objFolder = $objShell.namespace($viaExpandedDir)
-    $totalFonts = $objFolder.items() | measure
-    $totalFontsNum = $totalFonts.Count
-    Write-Host "There are a total of this many fonts: $totalFontsNum"
-    Write-Log -LogPath $LogFile -Message "There are a total of this many fonts: $totalFontsNum" -Severity "Info"
-    
-    foreach ($file in $objFolder.items())
-    {
-        $fileType = $($objFolder.getDetailsOf($file, 2))
-        if(($fileType -eq "OpenType font file") -or ($fileType -eq "TrueType font file"))
-        {
-            $fontName = $($objFolder.getDetailsOf($File, 21))
-            $regKeyName = $fontName,$openType -join " "
-            $regKeyValue = $file.Name
-            If (Test-Path -Path (Join-Path -Path $fontDirectory -ChildPath $file.Name)) {
-                Write-Host "$regKeyValue already existed, skipping installation"
-                Write-Log -LogPath $LogFile -Message "$regKeyValue already existed, skipping installation" -Severity "Info"                
-            }
-            Else {
-                Write-Host "Installing: $regKeyValue"
-                Write-Log -LogPath $LogFile -Message "Installing: $regKeyValue" -Severity "Info"
-                Move-Item -Path $file.Path -Destination $fontDirectory -Force
-                Write-Host "Moved $regKeyValue"
-                Invoke-Command -ScriptBlock { $null = New-ItemProperty -Path $args[0] -Name $args[1] -Value $args[2] -PropertyType String -Force } -ArgumentList $regPath, $regKeyname, $regKeyValue -ErrorAction Stop
-            }
-            If (!(Test-Path -Path (Join-Path -Path $fontDirectory -ChildPath $file.Name))) {
-                Write-Host "Font could not be found: $regKeyValue"
-                Write-Log -LogPath $LogFile -Message "Font could not be found: $regKeyValue" -Severity "Error"
-                Throw "Font could not be found: $regKeyValue"
-                Break
+    New-Item $TempFolder -Type Directory -Force | Out-Null
+
+    Get-ChildItem -Path $Source -Include '*.ttf', '*.ttc', '*.otf' -Recurse | ForEach {
+        If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
+
+            $Font = "$TempFolder\$($_.Name)"
+            Write-Host "Trying to install font: $Font"
+            Write-Log -LogPath $LogFile -Message "Trying to install font: $Font" -Severity "Info"
+
+            # Copy font to local temporary folder
+            Copy-Item $($_.FullName) -Destination $TempFolder
+        
+            # Install font
+            $Destination.CopyHere($Font, 0x10)
+
+            # Delete temporary copy of font
+            Remove-Item $Font -Force
+            If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
+                Write-Host "Font file not found after trying to install it"
+                Write-Log -LogPath $LogFile -Message "Font file not found after trying to install it" -Severity "Error"
+                Throw "Font file not found after trying to install it"
+                Break     
             }
         }
     }
+
     Write-Host "Successfully installed fonts"
     Write-Log -LogPath $LogFile -Message "Successfully installed fonts" -Severity "Info"
 
     Write-Host "Removing temp directory $script:tempDirectory"
     Write-Log -LogPath $LogFile -Message "Removing temp directory $script:tempDirectory" -Severity "Info"
-    # Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+    Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
 }
 Catch {
     Write-Log -LogPath $LogFile -Message "There was an error installing fonts: $_.Exception.Message" -Severity "Error"
