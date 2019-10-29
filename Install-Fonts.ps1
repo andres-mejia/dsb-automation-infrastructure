@@ -82,17 +82,23 @@ Try {
     New-Item $TempFolder -Type Directory -Force | Out-Null
 
     Get-ChildItem -Path $Source -Include '*.ttf', '*.ttc', '*.otf' -Recurse | ForEach {
+        Write-Host "Font fullname is: $($_.FullName)"
+        Write-Log -LogPath $LogFile -Message "Font fullname is: $($_.FullName)" -Severity "Info"
+
+        Write-Host "Font name is: $($_.Name)"
+        Write-Log -LogPath $LogFile -Message "Font name is: $($_.Name)" -Severity "Info"
+
         If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
 
             $Font = "$TempFolder\$($_.Name)"
-            Write-Host "Trying to install font: $Font"
-            Write-Log -LogPath $LogFile -Message "Trying to install font: $Font" -Severity "Info"
+            Write-Host "Trying to install font: $($_.FullName)"
+            Write-Log -LogPath $LogFile -Message "Trying to install font: $($_.FullName)" -Severity "Info"
 
             # Copy font to local temporary folder
             Copy-Item $($_.FullName) -Destination $TempFolder
         
             # Install font
-            $Destination.CopyHere($Font, 0x10)
+            $Destination.CopyHere($Font, 0x14)
 
             # Delete temporary copy of font
             Remove-Item $Font -Force
@@ -101,6 +107,10 @@ Try {
                 Write-Log -LogPath $LogFile -Message "Font file not found after trying to install it" -Severity "Error"
                 Throw "Font file not found after trying to install it"
                 Break     
+            }
+            Else {
+                Write-Host "Successfully installed font $($_.Name)"
+                Write-Log -LogPath $LogFile -Message "Successfully installed font $($_.Name)" -Severity "Info"
             }
         }
     }
