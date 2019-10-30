@@ -28,7 +28,7 @@ Param (
     [Parameter(Mandatory = $true)]
     [string] $StorageAccountContainer,
     
-    [bool] $DisableProxy = $false
+    [switch] $DisableProxy
 )
 
 $script:ErrorActionPreference = "SilentlyContinue"
