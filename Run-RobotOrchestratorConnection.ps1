@@ -26,7 +26,9 @@ Param (
     [string] $StorageAccountKey,
 
     [Parameter(Mandatory = $true)]
-    [string] $StorageAccountContainer
+    [string] $StorageAccountContainer,
+    
+    [bool] $DisableProxy = $false
 )
 
 $script:ErrorActionPreference = "SilentlyContinue"
@@ -127,24 +129,59 @@ function Main {
         Write-Host "Tenant is $OrchestratorTenant"
         Write-Log -LogPath $LogFile -Message "Tenant is $OrchestratorTenant" -Severity "Info"
 
-        Write-Host "Stopping Filebeat if it exists"
-        Write-Log -LogPath $LogFile -Message "Stopping Filebeat if it exists" -Severity "Info"
-
-        $filebeatService = Get-FilebeatService
-        If ($filebeatService) {
-            Write-Host "Filebeat service already installed, attempting to stop service"
-            Write-Log -LogPath $FullLogPath -Message "Filebeat service already installed, attempting to stop service" -Severity "Info"
-            Try {
-                Stop-FilebeatService -ErrorAction Stop
-            }
-            Catch {
-                Write-Host "There was an exception stopping Filebeat service: $_.Exception"
-                Write-Log -LogPath $FullLogPath -Message $_.Exception -Severity "Error"
-                Break
-            } 
+        Write-Host "Trying to install Filebeat"
+        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
+    
+        Try {
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken -ErrorAction Stop
+        }
+        Catch {
+            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+
+        Write-Host "Disabling proxy: $DisableProxy"
+        Write-Log -LogPath $LogFile -Message "Disabling proxy: $DisableProxy" -Severity "Info"
+
+        If ($DisableProxy) {
+            Try {
+                Write-Host "Attempting to disable proxy"
+                Write-Log -LogPath $LogFile -Message "Attempting to disable proxy" -Severity "Info"
+
+                $pathToProxy = "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings"
+    
+                Set-ItemProperty -Path $pathToProxy -Name ProxyEnable -Value 0 -ErrorAction Stop
+                Set-ItemProperty -Path $pathToProxy -Name ProxyServer -Value "" -ErrorAction Stop
+                Set-ItemProperty -Path $pathToProxy -Name AutoConfigURL -Value "" -ErrorAction Stop
+
+                Write-Host "Checking if proxy disabled"
+                Write-Log -LogPath $LogFile -Message "Checking if proxy disabled" -Severity "Info"
+
+                $proxySetting = Get-ItemProperty $pathToProxy
+                If (-not($proxySetting.ProxyEnable -eq 0)) {
+                    Write-Host "Proxy was not disabled correctly"
+                    Write-Log -LogPath $LogFile -Message "Proxy was not disabled correctly" -Severity "Error"
+                    Throw "Proxy was not disabled correctly"
+                    Break
+                }
+                Else {
+                    Write-Host "Proxy disabled correctly"
+                    Write-Log -LogPath $LogFile -Message "Proxy disabled correctly" -Severity "Info"
+                }
+            }
+            Catch {
+                Write-Host "There was an error adjusting proxy settings, exception: $_.Exception"
+                Write-Log -LogPath $LogFile -Message "There was an error adjusting proxy settings, exception: $_.Exception" -Severity "Error"
+                Throw "There was an error adjusting proxy settings, exception: $_.Exception"
+                Break
+            }
+        }
+        Else {
+            Write-Host "Did not do anything to proxy settings"
+            Write-Log -LogPath $LogFile -Message "Did not do anything to proxy settings" -Severity "Info"
+        }
 
         Write-Host "Attempting to schedule robot connection script located at: $connectRoboDownload"
         Write-Log -LogPath $LogFile -Message "Attempting to schedule robot connection script located at: $connectRoboDownload" -Severity "Info"        
@@ -230,21 +267,11 @@ function Main {
             Throw "There was an error installing fonts, exception: $_.Exception"
             Break
         }
+
     }
     End {
-        Write-Host "Trying to install Filebeat"
-        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
-    
-        Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken -ErrorAction Stop
-        }
-        Catch {
-            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
-        }
-
         Write-Host "Run-RobotOrchestrationConnection script has finished running. Exiting now"
-        Write-Log -LogPath $LogFile -Message "Run-RobotOrchestrationConnection script has finished running. Exiting now" -Severity "Info"        
+        Write-Log -LogPath $LogFile -Message "Run-RobotOrchestrationConnection script has finished running. Exiting now" -Severity "Info"
     }
 }
 

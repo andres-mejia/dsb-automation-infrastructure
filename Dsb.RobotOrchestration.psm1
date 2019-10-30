@@ -254,7 +254,7 @@ function Confirm-FilebeatServiceRunning {
         return $true
     }
     else {
-        Write-Host "Filebeat servicfye is not running"
+        Write-Host "Filebeat service is not running"
         Write-Log -LogPath $FullLogPath -Message "Filebeat service is not running" -Severity "Warn"
         return $false
     }
