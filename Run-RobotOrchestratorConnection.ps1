@@ -91,7 +91,7 @@ function Main {
         $installFonts = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Install-Fonts.ps1"
         Write-Host "Attempting to download file from from: $installFonts"
         $script:installFontsDownload = "$connectRoboPath\Install-Fonts.ps1"
-        # $wc.DownloadFile($installFonts, $installFontsDownload)       
+        $wc.DownloadFile($installFonts, $installFontsDownload)       
 
         $p = [Environment]::GetEnvironmentVariable("PSModulePath")
         $p += ";C:\Program Files\WindowsPowerShell\Modules\"
