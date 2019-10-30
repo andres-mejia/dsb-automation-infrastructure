@@ -74,14 +74,10 @@ Try {
         Break        
     }
     
-    $SourceDir = $viaExpandedDir
     $Source = "$viaExpandedDir\*"
     $Destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
-    $TempFolder = "C:\Windows\Temp\Fonts"
 
-    New-Item $TempFolder -Type Directory -Force | Out-Null
-
-    Get-ChildItem -Path $Source -Include '*.ttf', '*.ttc', '*.otf' -Recurse | ForEach {
+    Get-ChildItem -Path $Source -Include '*.ttf', '*.ttc', '*.otf' -Recurse | ForEach-Object {
         Write-Host "Font fullname is: $($_.FullName)"
         Write-Log -LogPath $LogFile -Message "Font fullname is: $($_.FullName)" -Severity "Info"
 
@@ -117,7 +113,7 @@ Try {
 
     Write-Host "Removing temp directory $script:tempDirectory"
     Write-Log -LogPath $LogFile -Message "Removing temp directory $script:tempDirectory" -Severity "Info"
-    Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
+    Remove-Item tempDirectory -Recurse -Force | Out-Null
 }
 Catch {
     Write-Log -LogPath $LogFile -Message "There was an error installing fonts: $_.Exception.Message" -Severity "Error"
