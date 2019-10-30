@@ -98,7 +98,7 @@ Try {
             Copy-Item $($_.FullName) -Destination $TempFolder
         
             # Install font
-            $Destination.CopyHere($Font, 0x14)
+            Invoke-Command -ScriptBlock { $Destination.CopyHere($Font, 0x14) }
 
             # Delete temporary copy of font
             Remove-Item $Font -Force
