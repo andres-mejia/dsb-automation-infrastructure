@@ -72,7 +72,14 @@ function Write-Log
 
         $logString = Format-LogMessage -Message $Message -Environment $Environment -LogPath $LogPath -Severity $Severity
         $logString = $logString.Trim()
-        [string]$logString >> $LogPath
+        # Add-content but if error, scoop
+        Try {
+            Add-Content -Path $LogPath -Value $logString -Force -ErrorAction Stop
+        }
+        Catch {
+            Write-Host "There was an error using add-content to log file, scooping log message now"
+            [string]$logString >> $LogPath
+        }
     }
     Catch {
         Write-Host "There was an error writing log message: {$Message} to log: {$LogPath}: $_.Exception"
