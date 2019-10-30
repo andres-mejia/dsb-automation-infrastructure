@@ -58,14 +58,14 @@ Try {
         -StorageAccountName $StorageAccountName `
         -StorageAccountContainer $StorageAccountContainer `
         -BlobFile $viaOfficeZip `
-        -OutPath $script:tempDirectory
+        -OutPath $tempDirectory
 
-    $viaExpandedDir = "$script:tempDirectory\$via"
-    Write-Host "Expanding $script:tempDirectory/$viaOfficeZip to $viaExpandedDir"
-    Write-Log -LogPath $LogFile -Message "Expanding $script:tempDirectory/$viaOfficeZip to $viaExpandedDir" -Severity "Info"
+    $viaExpandedDir = "$tempDirectory\$via"
+    Write-Host "Expanding $tempDirectory/$viaOfficeZip to $viaExpandedDir"
+    Write-Log -LogPath $LogFile -Message "Expanding $tempDirectory/$viaOfficeZip to $viaExpandedDir" -Severity "Info"
 
     New-Item -ItemType Directory -Path $viaExpandedDir
-    Expand-Archive -Path "$script:tempDirectory\$viaOfficeZip" -DestinationPath $viaExpandedDir -Force
+    Expand-Archive -Path "$tempDirectory\$viaOfficeZip" -DestinationPath $viaExpandedDir -Force
 
     If ((Get-ChildItem $viaExpandedDir | Measure-Object).Count -eq 0) {
         Write-Host "Expanded zip was empty"
@@ -75,6 +75,7 @@ Try {
     }
     
     $Source = "$viaExpandedDir\*"
+    $FontDirectory = "C:\Windows\Fonts"
     $Destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
 
     Get-ChildItem -Path $Source -Include '*.ttf', '*.ttc', '*.otf' -Recurse | ForEach-Object {
@@ -84,14 +85,18 @@ Try {
         Write-Host "Font name is: $($_.Name)"
         Write-Log -LogPath $LogFile -Message "Font name is: $($_.Name)" -Severity "Info"
 
-        If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
+        $onlyFontName = $($_.Name).Substring(0, $($_.Name).Length - 4)
+        If (-not(Test-Path "$FontDirectory\$($_.Name)")) {
 
-            Write-Host "Trying to install font: $($_.FullName)"
-            Write-Log -LogPath $LogFile -Message "Trying to install font: $($_.FullName)" -Severity "Info"
+            Write-Host "Trying to install font: $onlyFontName"
+            Write-Log -LogPath $LogFile -Message "Trying to install font: $onlyFontName" -Severity "Info"
             
-            $Destination.CopyHere($($_.FullName), 0x10)
+            Copy-Item $($_.FullName) -Destination $FontDirectory -Force
+            reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" /v "$onlyFontName (OpenType)" /t REG_SZ /d $($_.Name) /f
 
-            If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
+            # $Destination.CopyHere($($_.FullName), 0x10)
+
+            If (-not(Test-Path "$FontDirectory\$($_.Name)")) {
                 Write-Host "Font file not found after trying to install it"
                 Write-Log -LogPath $LogFile -Message "Font file not found after trying to install it" -Severity "Error"
                 Throw "Font file not found after trying to install it"
@@ -111,9 +116,9 @@ Try {
     Write-Host "Successfully installed fonts"
     Write-Log -LogPath $LogFile -Message "Successfully installed fonts" -Severity "Info"
 
-    Write-Host "Removing temp directory $script:tempDirectory"
-    Write-Log -LogPath $LogFile -Message "Removing temp directory $script:tempDirectory" -Severity "Info"
-    Remove-Item tempDirectory -Recurse -Force | Out-Null
+    Write-Host "Removing temp directory $tempDirectory"
+    Write-Log -LogPath $LogFile -Message "Removing temp directory $tempDirectory" -Severity "Info"
+    Remove-Item $tempDirectory -Recurse -Force | Out-Null
 }
 Catch {
     Write-Log -LogPath $LogFile -Message "There was an error installing fonts: $_.Exception.Message" -Severity "Error"
