@@ -126,15 +126,22 @@ function Main {
 
         Write-Host "Tenant is $OrchestratorTenant"
         Write-Log -LogPath $LogFile -Message "Tenant is $OrchestratorTenant" -Severity "Info"
-        
-        Write-Host "Trying to install Filebeat"
-        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
-        Try {
-            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken -ErrorAction Stop
-        }
-        Catch {
-            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
+
+        Write-Host "Stopping Filebeat if it exists"
+        Write-Log -LogPath $LogFile -Message "Stopping Filebeat if it exists" -Severity "Info"
+
+        $filebeatService = Get-FilebeatService
+        If ($filebeatService) {
+            Write-Host "Filebeat service already installed, attempting to stop service"
+            Write-Log -LogPath $FullLogPath -Message "Filebeat service already installed, attempting to stop service" -Severity "Info"
+            Try {
+                Stop-FilebeatService -ErrorAction Stop
+            }
+            Catch {
+                Write-Host "There was an exception stopping Filebeat service: $_.Exception"
+                Write-Log -LogPath $FullLogPath -Message $_.Exception -Severity "Error"
+                Break
+            } 
         }
 
         Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
@@ -223,14 +230,22 @@ function Main {
             Throw "There was an error installing fonts, exception: $_.Exception"
             Break
         }
-
     }
     End {
+        Write-Host "Trying to install Filebeat"
+        Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
+    
+        Try {
+            Install-Filebeat -LogPath $sLogPath -LogName $installFilebeatScript -DownloadPath $script:tempDirectory -FilebeatVersion 7.2.0 -HumioIngestToken $HumioIngestToken -ErrorAction Stop
+        }
+        Catch {
+            Write-Host "There was an error trying to install Filebeats, exception: $_.Exception"
+            Write-Log -LogPath $LogFile -Message "There was an error trying to install Filebeats, exception: $_.Exception" -Severity "Error"
+        }
+
         Write-Host "Run-RobotOrchestrationConnection script has finished running. Exiting now"
         Write-Log -LogPath $LogFile -Message "Run-RobotOrchestrationConnection script has finished running. Exiting now" -Severity "Info"        
     }
 }
 
-
 Main
-Finish-Log

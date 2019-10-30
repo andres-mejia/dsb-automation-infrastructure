@@ -72,13 +72,13 @@ function Write-Log
 
         $logString = Format-LogMessage -Message $Message -Environment $Environment -LogPath $LogPath -Severity $Severity
         $logString = $logString.Trim()
-        # Add-content but if error, scoop
+        # Add-content but if error, use out-file
         Try {
             Add-Content -Path $LogPath -Value $logString -Force -ErrorAction Stop
         }
         Catch {
-            Write-Host "There was an error using add-content to log file, scooping log message now"
-            [string]$logString >> $LogPath
+            Write-Host "There was an error using add-content to log file, using out-file instead"
+            [string]$logString | Out-File -FilePath $LogPath -Append -Force -NoClobber
         }
     }
     Catch {
@@ -483,8 +483,8 @@ function Install-Filebeat {
         Write-Log -LogPath $FullLogPath -Message "Filebeats service is running, exiting script now" -Severity "Info"
     }
 
-    Write-Host "$MyInvocation.MyCommand.Name finished without Throwing error"
-    Write-Log -LogPath $FullLogPath -Message "$MyInvocation.MyCommand.Name finished without Throwing error" -Severity "Info"
+    Write-Host "Install Filebeat installed without error"
+    Write-Log -LogPath $FullLogPath -Message "Install Filebeat installed without error" -Severity "Info"
 }
 
 function Get-Blob {

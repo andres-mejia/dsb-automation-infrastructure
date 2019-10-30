@@ -90,18 +90,11 @@ Try {
 
         If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
 
-            $Font = "$TempFolder\$($_.Name)"
             Write-Host "Trying to install font: $($_.FullName)"
             Write-Log -LogPath $LogFile -Message "Trying to install font: $($_.FullName)" -Severity "Info"
+            
+            $Destination.CopyHere($($_.FullName), 0x10)
 
-            # Copy font to local temporary folder
-            Copy-Item $($_.FullName) -Destination $TempFolder
-        
-            # Install font
-            Invoke-Command -ScriptBlock { $Destination.CopyHere($Font, 0x14) }
-
-            # Delete temporary copy of font
-            Remove-Item $Font -Force
             If (-not(Test-Path "C:\Windows\Fonts\$($_.Name)")) {
                 Write-Host "Font file not found after trying to install it"
                 Write-Log -LogPath $LogFile -Message "Font file not found after trying to install it" -Severity "Error"
@@ -112,6 +105,10 @@ Try {
                 Write-Host "Successfully installed font $($_.Name)"
                 Write-Log -LogPath $LogFile -Message "Successfully installed font $($_.Name)" -Severity "Info"
             }
+        }
+        Else {
+            Write-Host "Font $($_.Name) already exists, not installing now"
+            Write-Log -LogPath $LogFile -Message "Font $($_.Name) already exists, not installing now" -Severity "Info"
         }
     }
 
