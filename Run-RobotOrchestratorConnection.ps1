@@ -151,6 +151,7 @@ function Main {
                 Write-Log -LogPath $LogFile -Message "Attempting to disable proxy" -Severity "Info"
 
                 $pathToProxy = "HKLM:\Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings"
+                $pathToProxy = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'
     
                 Set-ItemProperty -Path $pathToProxy -Name ProxyEnable -Value 0 -ErrorAction Stop
                 Set-ItemProperty -Path $pathToProxy -Name ProxyServer -Value "" -ErrorAction Stop
