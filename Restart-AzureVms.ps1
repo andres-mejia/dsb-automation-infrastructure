@@ -1,11 +1,6 @@
-param(
-    [parameter(Mandatory=$true)]
-	[String] $AzureSubscriptionId,
-    [parameter(Mandatory=$true)]
-	[String] $Environment,
-    [parameter(Mandatory=$true)]
-	[String] $VmsToRestart
-)
+$VmsToRestart = Get-AutomationVariable -Name 'VmsToRestart'
+$Environment = Get-AutomationVariable -Name 'Environment'
+$AzureSubscriptionId = Get-AutomationVariable -Name 'AzureSubscriptionId'
 
 $ErrorActionPreference = "stop"
 
