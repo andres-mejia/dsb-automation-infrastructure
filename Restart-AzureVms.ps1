@@ -1,8 +1,5 @@
 Param (
     [Parameter(Mandatory = $true)]
-    [string] $Environment,
-
-    [Parameter(Mandatory = $true)]
     [string] $AzureSubscriptionId,
 
     [Parameter(Mandatory = $true)]
