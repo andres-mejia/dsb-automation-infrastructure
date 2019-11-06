@@ -1,6 +1,7 @@
 $VmsToRestart = Get-AutomationVariable -Name 'VmsToRestart'
 $Environment = Get-AutomationVariable -Name 'Environment'
 $AzureSubscriptionId = Get-AutomationVariable -Name 'AzureSubscriptionId'
+$AzureVmResourceGroup = Get-AutomationVariable -Name 'AzureVmResourceGroup'
 
 $ErrorActionPreference = "stop"
 
@@ -27,8 +28,7 @@ try {
     Write-Verbose "Setting subscription to work against: $AzureSubscriptionId" -Verbose
     Set-AzureRmContext -SubscriptionId $AzureSubscriptionId -ErrorAction Stop
 
-    $ResourceGroupName = "ROBOTICS-ROBOT-MACHINES-$Environment"
-    Write-Verbose "Resource Group is: $ResourceGroupName" -Verbose
+    Write-Verbose "Resource Group of VMs is: $AzureVmResourceGroup" -Verbose
 
     $SplitVms = $VmsToRestart.Split(",")
 
@@ -36,8 +36,8 @@ try {
     for ($i=0; $i -lt $SplitVms.length; $i++) {
         $VmName = $SplitVms[$i]
 
-        Write-Verbose "Attempting to shutdown Azure machine: $VmName in resource group: $ResourceGroupName" -Verbose
-        $StopMachineCommand = Stop-AzureRmVM -Name $VmName -ResourceGroupName $ResourceGroupName -Force
+        Write-Verbose "Attempting to shutdown Azure machine: $VmName in resource group: $AzureVmResourceGroup" -Verbose
+        $StopMachineCommand = Stop-AzureRmVM -Name $VmName -ResourceGroupName $AzureVmResourceGroup -Force
         $IsSuccess = $StopMachineCommand.IsSuccessStatusCode
         Write-Verbose "Status code is $IsSuccess" -Verbose
         if (!($StopMachineCommand.IsSuccessStatusCode)) {
@@ -49,7 +49,7 @@ try {
 
         Write-Verbose "Trying to start Azure Machine: $VmName" -Verbose
 
-        $StartMachineCommand = Start-AzureRmVM -Name $VmName -ResourceGroupName $ResourceGroupName
+        $StartMachineCommand = Start-AzureRmVM -Name $VmName -ResourceGroupName $AzureVmResourceGroup
         $IsSuccess = $StartMachineCommand.IsSuccessStatusCode
         Write-Verbose "Status code is $IsSuccess" -Verbose
         if (!($StartMachineCommand.IsSuccessStatusCode)) {
