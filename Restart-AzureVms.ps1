@@ -1,7 +1,16 @@
-$VmsToRestart = Get-AutomationVariable -Name 'VmsToRestart'
-$Environment = Get-AutomationVariable -Name 'Environment'
-$AzureSubscriptionId = Get-AutomationVariable -Name 'AzureSubscriptionId'
-$AzureVmResourceGroup = Get-AutomationVariable -Name 'AzureVmResourceGroup'
+Param (
+    [Parameter(Mandatory = $true)]
+    [string] $Environment,
+
+    [Parameter(Mandatory = $true)]
+    [string] $AzureSubscriptionId,
+
+    [Parameter(Mandatory = $true)]
+    [string] $AzureVmResourceGroup,
+
+    [Parameter(Mandatory = $true)]
+    [string] $VmsToRestart
+)
 
 $ErrorActionPreference = "stop"
 
@@ -57,6 +66,7 @@ try {
             throw "Start-AzureRmVm failed for machine $VmName with error: $($StartMachineCommand.Error)"
             break
         }
+        Write-Verbose "Successfully started Azure machine: $VmName" -Verbose
     }
 }
 catch
