@@ -1,3 +1,4 @@
+[CmdletBinding()]
 Param (
     [Parameter(Mandatory = $true)]
     [string] $AzureSubscriptionId,
@@ -5,11 +6,33 @@ Param (
     [Parameter(Mandatory = $true)]
     [string] $AzureVmResourceGroup,
 
-    [Parameter(Mandatory = $true)]
-    [string] $VmsToRestart
+    [Object]$WebhookData
 )
 
 $ErrorActionPreference = "stop"
+
+if ($WebHookData){
+
+    # Collect properties of WebhookData
+    $WebhookName     =     $WebHookData.WebhookName
+    $WebhookHeaders  =     $WebHookData.RequestHeader
+    $WebhookBody     =     $WebHookData.RequestBody
+
+    # Collect individual headers. Input converted from JSON.
+    $From = $WebhookHeaders.From
+    $Input = (ConvertFrom-Json -InputObject $WebhookBody)
+    Write-Verbose "WebhookBody: $Input"
+    Write-Output -InputObject ('Runbook started from webhook {0} by {1}.' -f $WebhookName, $From)
+}
+
+if (!$Input.VmsToRestart) {
+    Write-Verbose "No VMs to restart provided in body" -Verbose
+    throw "Could not retrieve connection asset: $ConnectionAssetName. Check that this asset exists in the Automation account."
+    break
+}   
+
+$VmsToRestart = $Input.VmsToRestart
+Write-Verbose "Machines to restart are: $VmsToRestart"
 
 try {
     $currentTime = (Get-Date).ToUniversalTime()
@@ -38,7 +61,7 @@ try {
 
     $SplitVms = $VmsToRestart.Split(",")
 
-    Write-Verbose "Processing [$($SplitVms.length)] virtual machines found in subscription" -Verbose
+    Write-Verbose "Processing [$($SplitVms.length)] virtual machines" -Verbose
     for ($i=0; $i -lt $SplitVms.length; $i++) {
         $VmName = $SplitVms[$i]
 
