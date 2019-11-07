@@ -24,7 +24,7 @@ Param (
   [string] $hostingType
 )
 #Set Error Action to Silently Continue
-$ErrorActionPreference = "SilentlyContinue"
+$ErrorActionPreference = "Stop"
 #Script Version
 $sScriptVersion = "1.0"
 #Debug mode; $true - enabled ; $false - disabled
@@ -34,34 +34,60 @@ $LogPath = "C:\ProgramData\AutomationAzureOrchestration"
 $LogName = "Install-UiPath-$(Get-Date -f "yyyyMMddhhmmssfff").log"
 $LogFile = Join-Path -Path $LogPath -ChildPath $LogName
 #Orchestrator SSL check
+$tempDirectory = (Join-Path $ENV:TEMP "UiPath-$(Get-Date -f "yyyyMMddhhmmssfff")")
+$orchModuleDir = "C:\Program Files\WindowsPowerShell\Modules\Dsb.RobotOrchestration"
+
+$AllProtocols = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
+[System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
 $orchSSLcheck = $false
 
 function Main {
 
   Begin {
-    #Log log log
-    Write-Host "Install-UiPath starts"
-    Write-Log -LogPath $LogFile -Message "Install-UiPath starts" -Severity "Info"
+    try {
+      $orchModule = "https://raw.githubusercontent.com/nkuik/dsb-automation-infrastructure/master/Dsb.RobotOrchestration.psm1"
+      Write-Host "Attempting to download file from from: $orchModule"
+      $orchModuleDownload = "$orchModuleDir\Dsb.RobotOrchestration.psm1"
+      $wc = New-Object System.Net.WebClient
+      $wc.DownloadFile($orchModule, $orchModuleDownload)
 
-    #Define TLS for Invoke-WebRequest
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+      $p = [Environment]::GetEnvironmentVariable("PSModulePath")
+      $p += ";C:\Program Files\WindowsPowerShell\Modules\"
+      [Environment]::SetEnvironmentVariable("PSModulePath", $p)
+      
+      If (Get-Module Dsb.RobotOrchestration) {
+          Remove-Module Dsb.RobotOrchestration
+      }
 
-    if (!$orchSSLcheck) {
-      [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+      Import-Module Dsb.RobotOrchestration
+      
+      Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
+
+      #Log log log
+      Write-Host "Install-UiPath starts"
+
+      #Setup temp dir in %appdata%\Local\Temp
+      New-Item -ItemType Directory -Path $tempDirectory | Out-Null
+      Write-Host "Temp directory is $tempDirectory"
+
+      #Download UiPlatform
+      $msiName = 'UiPathStudio.msi'
+      $msiPath = Join-Path $tempDirectory $msiName
+      $robotExePath = Get-UiRobotExePath
+
+      Write-Host "The result of Get-UiRobotExePath is: $robotExePath"
+      if (!(Test-Path $robotExePath)) {
+        Write-Host "No robot exe existed, downloading the msi now"
+
+        $uipathMsi = "https://download.uipath.com/versions/$studioVersion/UiPathStudio.msi"
+        Write-Host "Attempting to download file from from: $uipathMsi"
+        $uipathMsiDownload = "$tempDirectory/UiPathStudio.msi"
+        $wc.DownloadFile($uipathMsi, $uipathMsiDownload)      
+      }
     }
-
-    #Setup temp dir in %appdata%\Local\Temp
-    $script:tempDirectory = (Join-Path $ENV:TEMP "UiPath-$(Get-Date -f "yyyyMMddhhmmssfff")")
-    New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
-
-    #Download UiPlatform
-    $msiName = 'UiPathStudio.msi'
-    $msiPath = Join-Path $script:tempDirectory $msiName
-    $robotExePath = Get-UiRobotExePath
-
-    Write-Host "The result of Get-UiRobotExePath is: $robotExePath"
-    if (!(Test-Path $robotExePath)) {
-      Download-File -url "https://download.uipath.com/versions/$studioVersion/UiPathStudio.msi" -outputFile $msiPath
+    catch {
+      Write-Host "There was an error installing UiPath: $_.Exception"
+      break
     }
   }
 
@@ -72,26 +98,26 @@ function Main {
     if (!(Test-Path $robotExePath)) {
 
       Write-Host "Installing UiPath Robot Type [$robotType]"
-      Write-Log -LogPath $LogFile -Message "Installing UiPath Robot Type [$robotType]" -Severity "Info"
+
 
       #Install the Robot
       if ($robotType -eq "Development") {
         # log log log
         Write-Host "Installing UiPath Robot with Studio Feature"
-        Write-Log -LogPath $LogFile -Message "Installing UiPath Robot with Studio Feature" -Severity "Info"
+  
         $msiFeatures = @("DesktopFeature", "Robot", "Studio", "StartupLauncher", "RegisterService", "Packages")
       }
       Else {
         # log log log
         Write-Host "Installing UiPath Robot without Studio Feature"
-        Write-Log -LogPath $LogFile -Message "Installing UiPath Robot without Studio Feature" -Severity "Info"
+  
         $msiFeatures = @("DesktopFeature", "Robot", "StartupLauncher", "RegisterService", "Packages")
       }
 
       Try {
         if ($installationFolder) {
           Write-Host "Calling Install-Robot with argument installationFolder: $installationFolder"
-          Write-Log -LogPath $LogFile -Message "Calling Install-Robot with argument installationFolder: $installationFolder" -Severity "Info"
+    
 
           $installResult = Install-UiPath -msiPath $msiPath -installationFolder $installationFolder -msiFeatures $msiFeatures
           $uiPathDir = "$installationFolder\UiPath"
@@ -106,11 +132,11 @@ function Main {
       Catch {
         if ($_.Exception) {
           Write-Host "There was an error installing UiPath: $_.Exception"
-          Log-Error -LogPath $LogFile -Message $_.Exception -Severity "Error"
+  
         }
         Else {
           Write-Host "There was an error installing UiPath, but the exception was empty"
-          Log-Error -LogPath $LogFile -Message "There was an error, but it was blank" -Severity "Error"
+  
         }
         Break
       }
@@ -118,25 +144,21 @@ function Main {
     }
     Else {
       Write-Host "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot"
-      Write-Log -LogPath $LogFile -Message "Previous instance of UiRobot.exe existed at $robotExePath, not installing the robot" -Severity "Info"
+
     }
 
-    Write-Host "Removing temp directory $($script:tempDirectory)"
-    Write-Log -LogPath $LogFile -Message "Removing temp directory $($script:tempDirectory)" -Severity "Info"
-    Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
-
+    Write-Host "Removing temp directory $($tempDirectory)"
+    Remove-Item $tempDirectory -Recurse -Force | Out-Null
 
     Write-Host "Checking robot service now"
-    Write-Log -LogPath $LogFile -Message "Checking robot service now" -Severity "Info"
 
     $roboService = Get-Service -DisplayName "UiPath Robot"
     $roboState = $roboService.Status
     Write-Host "Robo status is: $roboState"
-    Write-Log -LogPath $LogFile -Message "Robo status is: $roboState" -Severity "Info"
 
     if (($roboService -and $roboService.Status -eq "Stopped" )) {
       Write-Host "Robot service was stopped, starting and waiting for it now"
-      Write-Log -LogPath $LogFile -Message "Robot service was stopped, starting and waiting for it now" -Severity "Info"
+
       Start-Service $roboService.Name
     }
   
@@ -144,7 +166,7 @@ function Main {
   End {
     If ($?) {
       Write-Host "Completed Successfully."
-      Write-Log -LogPath $LogFile -Message "Completed Successfully." -Severity "Info"
+
     }
   }
 
@@ -218,31 +240,6 @@ function Get-UiRobotExePath {
 
 <#
   .DESCRIPTION
-  Downloads a file from a URL
-  .PARAMETER url
-  The URL to download from
-  .PARAMETER outputFile
-  The local path where the file will be downloaded
-#>
-function Download-File {
-  param (
-    [Parameter(Mandatory = $true)]
-    [string]$url,
-
-    [Parameter(Mandatory = $true)]
-    [string] $outputFile
-  )
-
-  Write-Verbose "Downloading file from $url to local path $outputFile"
-
-  $webClient = New-Object System.Net.WebClient
-
-  $webClient.DownloadFile($url, $outputFile)
-
-}
-
-<#
-  .DESCRIPTION
   Install UiPath Robot and/or Studio.
   .PARAMETER msiPath
   MSI installer path.
@@ -274,7 +271,7 @@ function Install-UiPath {
     Write-Host "Installing UiPath at default path"
   }
 
-  $logPath = Join-Path $script:tempDirectory "install.log"
+  $logPath = Join-Path $tempDirectory "install.log"
   $process = Invoke-MSIExec -msiPath $msiPath -logPath $logPath -features $msiFeatures
 
   return @{
@@ -283,5 +280,4 @@ function Install-UiPath {
   }
 }
 
-Start-Log -LogPath $LogPath -LogName $Logname -ErrorAction Stop
 Main
