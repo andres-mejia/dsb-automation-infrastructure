@@ -25,6 +25,20 @@ if ($WebHookData){
     Write-Output -InputObject ('Runbook started from webhook {0} by {1}.' -f $WebhookName, $From)
 }
 
+$Token = Get-AutomationVariable -Name 'AzureAutomationToken'
+
+if (!$Input.AzureAutomationToken) {
+    Write-Verbose "No token provided in request" -Verbose
+    throw "No token was sent in the request"
+    break
+}
+
+if ($Token -ne $Input.AzureAutomationToken) {
+    Write-Verbose "Token provided in request does not match the auth token" -Verbose
+    throw "Token provided in request does not match the auth token"
+    break
+}
+
 if (!$Input.VmsToRestart) {
     Write-Verbose "No VMs to restart provided in body" -Verbose
     throw "Could not retrieve connection asset: $ConnectionAssetName. Check that this asset exists in the Automation account."
