@@ -136,7 +136,10 @@ function Download-String {
         [string]$FullLogPath,
 
         [Parameter(Mandatory=$true)]
-        [string] $Url
+        [string] $Url,
+        
+        [Parameter()]
+        [string] $AuthToken
     )
 
     Write-Host "Attempting to download string from url: $Url"
