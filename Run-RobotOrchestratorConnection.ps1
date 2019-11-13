@@ -11,7 +11,7 @@ Param (
     [string] $OrchestratorApiUrl,
 
     [Parameter(Mandatory = $true)]
-    [string] $OrchestratorTenant,
+    [string] $OrchestratorApiToken,
 
     [Parameter(Mandatory = $true)]
     [string] $HumioIngestToken,
@@ -126,8 +126,8 @@ function Main {
         Write-Host "Connect Robot Orchestrator starts"
         Write-Log -LogPath $LogFile -Message "Connect Robot Orchestrator starts" -Severity "Info"
 
-        Write-Host "Tenant is $OrchestratorTenant"
-        Write-Log -LogPath $LogFile -Message "Tenant is $OrchestratorTenant" -Severity "Info"
+        Write-Host "OrchestratorApiToken is $OrchestratorApiToken"
+        Write-Log -LogPath $LogFile -Message "OrchestratorApiToken is $OrchestratorApiToken" -Severity "Info"
 
         Write-Host "Trying to install Filebeat"
         Write-Log -LogPath $LogFile -Message "Trying to install Filebeat" -Severity "Info"
@@ -197,25 +197,10 @@ function Main {
             }
         }
 
-        Write-Host "Trying to install UiPath"
-        Write-Log -LogPath $LogFile -Message "Trying to install UiPath" -Severity "Info"
-        Try {
-            & $installRoboDownload -studioVersion "19.4.3" -robotType "Nonproduction" -ErrorAction Stop
-            Write-Host "Ran install uipath script"
-            Write-Log -LogPath $LogFile -Message "Ran install uipath script" -Severity "Info"
-            Wait-ForService "UiPath Robot*" "00:01:20"
-        }
-        Catch {
-            Write-Host "There was an error trying to install UiPath, exception: $_.Exception"
-            Write-Log -LogPath $LogFile -Message $_.Exception -Severity "Error"
-            Throw "There was an error trying to install UiPath, exception: $_.Exception"
-            Break
-        }
-        
         Write-Host "Trying to run robot connection script"
         Write-Log -LogPath $LogFile -Message "Trying to run robot connection script" -Severity "Info"
         Try {
-            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorTenant $OrchestratorTenant -ErrorAction Stop        
+            & $connectRoboDownload -LogPath $sLogPath -LogName $scheduledTaskScript -OrchestratorUrl $OrchestratorUrl -OrchestratorApiUrl $OrchestratorApiUrl -OrchestratorApiToken $OrchestratorApiToken -ErrorAction Stop        
         }
         Catch {
             Write-Host "There was an error trying to run robot connection script, exception: $_.Exception"
