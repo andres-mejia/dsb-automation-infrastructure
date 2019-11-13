@@ -12,7 +12,7 @@ Param (
     [string] $OrchestratorApiUrl,
 
     [Parameter(Mandatory = $true)]
-    [string] $OrchestratorTenant
+    [string] $OrchestratorApiToken
 )
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -32,9 +32,11 @@ If (-Not (Test-Path $robotExePath)) {
 }
 
 Try {
-    $machinesUrl = "$OrchestratorApiUrl/api/v1/machines/$OrchestratorTenant"
+    $machinesUrl = "$OrchestratorApiUrl/api/v1/all-machines"
     Write-Host "Url for retrieving machine keys is $machinesUrl"
-    $machineString = Download-String -FullLogPath $fullLogPath -Url $machinesUrl
+    $wc = New-Object System.Net.WebClient
+    $wc.Headers.add('Authorization', $OrchestratorApiToken) 
+    $machineString = $wc.DownloadString($machinesUrl)
     Write-Host "Machines are $machineString"
     $machines =  $machineString | ConvertFrom-Json
 
