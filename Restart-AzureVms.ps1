@@ -11,12 +11,12 @@ Param (
 
 $ErrorActionPreference = "stop"
 
-if ($WebHookData){
+if ($WebHookData) {
 
     # Collect properties of WebhookData
-    $WebhookName     =     $WebHookData.WebhookName
-    $WebhookHeaders  =     $WebHookData.RequestHeader
-    $WebhookBody     =     $WebHookData.RequestBody
+    $WebhookName = $WebHookData.WebhookName
+    $WebhookHeaders = $WebHookData.RequestHeader
+    $WebhookBody = $WebHookData.RequestBody
 
     # Collect individual headers. Input converted from JSON.
     $From = $WebhookHeaders.From
@@ -27,15 +27,15 @@ if ($WebHookData){
 
 $Token = Get-AutomationVariable -Name 'AzureAutomationToken'
 
-if (!$Input.AzureAutomationToken) {
-    Write-Verbose "No token provided in request" -Verbose
-    throw "No token was sent in the request"
+if (!$WebhookHeaders.AzureAutomationToken) {
+    Write-Verbose "No token provided in request headers" -Verbose
+    throw "No token was sent in the request headers"
     break
 }
 
-if ($Token -ne $Input.AzureAutomationToken) {
-    Write-Verbose "Token provided in request does not match the auth token" -Verbose
-    throw "Token provided in request does not match the auth token"
+if ($Token -ne $WebhookHeaders.AzureAutomationToken) {
+    Write-Verbose "Token provided in request headers does not match the auth token" -Verbose
+    throw "Token provided in request headers does not match the auth token"
     break
 }
 
@@ -55,8 +55,7 @@ try {
     $ConnectionAssetName = "AzureRunAsConnection"
     Write-Verbose "Get connection asset: $ConnectionAssetName" -Verbose
     $Conn = Get-AutomationConnection -Name $ConnectionAssetName
-    if (!$Conn)
-    {
+    if (!$Conn) {
         Write-Verbose "Runasconnection was null" -Verbose
         throw "Could not retrieve connection asset: $ConnectionAssetName. Check that this asset exists in the Automation account."
         break
@@ -76,7 +75,7 @@ try {
     $SplitVms = $VmsToRestart.Split(",")
 
     Write-Verbose "Processing [$($SplitVms.length)] virtual machines" -Verbose
-    for ($i=0; $i -lt $SplitVms.length; $i++) {
+    for ($i = 0; $i -lt $SplitVms.length; $i++) {
         $VmName = $SplitVms[$i]
 
         Write-Verbose "Attempting to shutdown Azure machine: $VmName in resource group: $AzureVmResourceGroup" -Verbose
@@ -103,13 +102,11 @@ try {
         Write-Verbose "Successfully started Azure machine: $VmName" -Verbose
     }
 }
-catch
-{
+catch {
     $errorMessage = $_.Exception.Message
     Write-Verbose "There was an error, message: $errorMessage" -Verbose
     throw "Unexpected exception: $errorMessage"
 }
-finally
-{
+finally {
     Write-Verbose "Runbook finished (Duration: $(("{0:hh\:mm\:ss}" -f ((Get-Date).ToUniversalTime() - $currentTime))))" -Verbose
 }
