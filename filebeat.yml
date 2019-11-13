@@ -60,14 +60,6 @@ filebeat.inputs:
 - type: log
   enabled: true
   paths:
-    - C:\rejsekort\InstallLog\BORISWKSInstall*.log
-  encoding: utf-8
-  fields:
-    "type": "boris-installation-parser"
-
-- type: log
-  enabled: true
-  paths:
     - C:\Program Files (x86)\Capgemini\Plads90 WPF Application\Plads90GUI\log\*.log
   encoding: utf-8
   fields:
