@@ -305,7 +305,7 @@ function Start-FilebeatService {
     $service.StartService()
     Start-Sleep -s 3
     $serviceIsRunning = Confirm-FilebeatServiceRunning -FullLogPath $FullLogPath
-    If ($serviceIsRunning -ne $true) {
+    If (!$serviceIsRunning) {
         Write-Host "Filebeat not running after attempting to start it"
         Write-Log -LogPath $FullLogPath -Message "Filebeat not running after attempting to start it" -Severity "Error"
         Throw "Filebeat not running after attempting to start it"
