@@ -31,9 +31,13 @@ If (-Not (Test-Path $robotExePath)) {
     Write-Log -LogPath $fullLogPath -Message "Robot exe found at $robotExePath" -Severity 'Info'
 }
 
+Write-Host "Orchestrator API Url is $OrchestratorApiUrl"
+Write-Log -LogPath $fullLogPath -Message "Orchestrator API Url is $OrchestratorApiUrl" -Severity "Info"
+
 Try {
     $machinesUrl = "$OrchestratorApiUrl/api/v1/all-machines"
     Write-Host "Url for retrieving machine keys is $machinesUrl"
+    Write-Log -LogPath $fullLogPath -Message "Url for retrieving machine keys is $machinesUrl" -Severity "Info"
     $wc = New-Object System.Net.WebClient
     $wc.Headers.add('Authorization', $OrchestratorApiToken) 
     $machineString = $wc.DownloadString($machinesUrl)
