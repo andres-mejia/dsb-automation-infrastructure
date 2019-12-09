@@ -1,7 +1,7 @@
 [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $true)]
-        [ValidateSet("18.4.5","19.4.1","19.4.2","19.4.3")]
+        [ValidateSet("18.4.5","19.4.1","19.4.2","19.4.3","19.10.1")]
         [string] $studioVersion,
 
         [Parameter(Mandatory = $true)]
